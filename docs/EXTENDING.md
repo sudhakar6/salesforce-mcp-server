@@ -133,3 +133,30 @@ Register it in `server.py` alongside the others, add
 model now sees `sf_get_account_health(account_id: str)` directly in
 `tools/list` — a tighter, purpose-built alternative to asking it to construct
 `sf_call_apex_rest(method="GET", path="/AccountHealth/...")` itself.
+
+## A real example commit: `sf_org_health`
+
+The `AccountHealth` example above is illustrative; for an actual tool added
+this same way, built, tested, and shipped, see commit
+[`2f86f43`](https://github.com/sudhakar6/salesforce-mcp-server/commit/2f86f43)
+— "Add `sf_org_health`: org info, all limits, and license seat usage." It
+touches exactly the places this guide describes, and nothing else:
+
+- [`tools/org_health.py`](../src/salesforce_mcp/tools/org_health.py) — the
+  new module (one tool, `sf_org_health`, aggregating five Salesforce calls
+  into one report)
+- [`server.py`](../src/salesforce_mcp/server.py) — one import added, one
+  entry added to the registration tuple
+- [`tests/tools/test_org_health.py`](../tests/tools/test_org_health.py) —
+  happy path plus one error case, mocked with `respx` exactly like every
+  other test file
+- `README.md` / `USAGE.md` / `ARCHITECTURE.md` — feature list, an example
+  prompt, and a short design note
+
+If you're adding your own tool, that commit is a good template to diff
+against: it's the smallest real example of "one new tool, end to end" in
+this repo's history.
+
+If you're adding your own tool, `git log --oneline -- src/salesforce_mcp/tools/org_health.py`
+finds the commit that added it — a good one to diff against as the smallest
+real example of "one new tool, end to end" in this repo's history.
