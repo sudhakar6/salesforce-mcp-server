@@ -1,0 +1,22 @@
+docs/EXTENDING.md
+  s_16337f49bef67d::t_2b520e35cf9f25 1-135
+README.md
+  s_16337f49bef67d::t_0b98b4f49ac29e 77,80
+  s_16337f49bef67d::t_c23aebe9d64155 16-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "66899279785986ea48451619190d10842b104e68",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  }
+}
