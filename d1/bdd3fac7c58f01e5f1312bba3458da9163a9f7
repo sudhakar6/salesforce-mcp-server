@@ -1,0 +1,85 @@
+src/salesforce_mcp/config.py
+  s_16337f49bef67d::t_2193690255f2b4 1-50
+src/salesforce_mcp/errors.py
+  s_16337f49bef67d::t_0d6f5100973305 1-92
+src/salesforce_mcp/resources.py
+  s_16337f49bef67d::t_c2c4b7713d243d 1-39
+src/salesforce_mcp/tools/composite.py
+  s_16337f49bef67d::t_afffa1ea9b5f6e 1-35
+src/salesforce_mcp/tools/describe.py
+  s_16337f49bef67d::t_9beee5ebbbc1ed 1-39
+src/salesforce_mcp/tools/ops.py
+  s_16337f49bef67d::t_ee7409750f4a8f 1-51
+src/salesforce_mcp/tools/query.py
+  s_16337f49bef67d::t_69e9f49c9beb1b 1-51
+src/salesforce_mcp/tools/records.py
+  s_16337f49bef67d::t_b31080c9332e15 1-79
+.dockerignore
+  s_16337f49bef67d::t_5d2630450f801c 1-10
+.env.example
+  s_16337f49bef67d::t_b8661afd51d2aa 1-22
+.github/workflows/ci.yml
+  s_16337f49bef67d::t_5dee449b787288 1-34
+.gitignore
+  s_16337f49bef67d::t_44beb706ecb087 1-9
+Dockerfile
+  s_16337f49bef67d::t_47c2040fa1cc44 1-21
+LICENSE
+  s_16337f49bef67d::t_8f335047f7b70c 1-21
+README.md
+  s_16337f49bef67d::t_19ad8d959cc6ca 1-68
+docs/ARCHITECTURE.md
+  s_16337f49bef67d::t_c7bc743099bc28 1-161
+docs/DEPLOYMENT.md
+  s_16337f49bef67d::t_1751632883f334 1-105
+docs/SETUP.md
+  s_16337f49bef67d::t_257a3862ab4fc7 1-81
+docs/USAGE.md
+  s_16337f49bef67d::t_eb10cea4b67a31 1-102
+pyproject.toml
+  s_16337f49bef67d::t_7d564405eb67b1 1-43
+src/salesforce_mcp/__init__.py
+  s_16337f49bef67d::t_525be7883504b1 1
+src/salesforce_mcp/http_auth.py
+  s_16337f49bef67d::t_49bea7455dba85 1-26
+src/salesforce_mcp/salesforce_client.py
+  s_16337f49bef67d::t_17b3ac5277bf5f 1-117
+src/salesforce_mcp/server.py
+  s_16337f49bef67d::t_5d42895243e4fe 1-75
+src/salesforce_mcp/tools/bulk.py
+  s_16337f49bef67d::t_4784fdc6f41988 1-143
+tests/conftest.py
+  s_16337f49bef67d::t_feede7de39e022 1-32
+tests/test_resources.py
+  s_16337f49bef67d::t_c5a5f690aece0b 1-50
+tests/test_salesforce_client.py
+  s_16337f49bef67d::t_c016579918dc49 1-132
+tests/tools/test_bulk.py
+  s_16337f49bef67d::t_9c9bbcf1e4e122 1-114
+tests/tools/test_composite.py
+  s_16337f49bef67d::t_7aa8e226ed4206 1-45
+tests/tools/test_describe.py
+  s_16337f49bef67d::t_bf35acad83a33d 1-34
+tests/tools/test_ops.py
+  s_16337f49bef67d::t_113c297df02aef 1-33
+tests/tools/test_query.py
+  s_16337f49bef67d::t_75067409a5e822 1-61
+tests/tools/test_records.py
+  s_16337f49bef67d::t_014eaccb3617f0 1-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "d1bdd3fac7c58f01e5f1312bba3458da9163a9f7",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  }
+}
