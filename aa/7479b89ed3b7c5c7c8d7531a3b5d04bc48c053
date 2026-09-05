@@ -1,0 +1,29 @@
+src/salesforce_mcp/server.py
+  s_16337f49bef67d::t_73a6753e1b8f80 12,19-20,34
+docs/ARCHITECTURE.md
+  s_16337f49bef67d::t_a8de4494742b42 109-139
+tests/tools/test_custom_api.py
+  s_16337f49bef67d::t_8d582a1610804e 1-69
+docs/USAGE.md
+  s_16337f49bef67d::t_4a453517635449 119-163
+src/salesforce_mcp/tools/custom_api.py
+  s_16337f49bef67d::t_afd58b25f25325 1-60
+README.md
+  s_16337f49bef67d::t_50fd1642f09f0c 31-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "aa7479b89ed3b7c5c7c8d7531a3b5d04bc48c053",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  }
+}
