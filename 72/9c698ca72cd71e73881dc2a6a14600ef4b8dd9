@@ -1,0 +1,40 @@
+docs/EXTENDING.md
+  s_16337f49bef67d::t_9592581a889a89 96-104
+README.md
+  s_16337f49bef67d::t_59d6b048f7cc4c 78-80
+src/salesforce_mcp/errors.py
+  s_16337f49bef67d::t_0dac94a5614572 97-119
+  s_16337f49bef67d::t_6e2f4ef0a494d9 9-12
+src/salesforce_mcp/prompts.py
+  s_16337f49bef67d::t_6df67a995d9996 70
+  s_16337f49bef67d::t_349608b1d17297 32
+  s_16337f49bef67d::t_cbc1e92d6491ff 1-7,9-31,33-69,71-114
+  s_16337f49bef67d::t_2561096d68ed7f 8
+docs/USAGE.md
+  s_16337f49bef67d::t_cb1110ca4ff9a2 193-216,223
+  s_16337f49bef67d::t_0e6dd5ec70cf91 217-222
+tests/test_prompts.py
+  s_16337f49bef67d::t_69911baa82e798 50,57
+  s_16337f49bef67d::t_62e85cae7b7bc0 7
+  s_16337f49bef67d::t_d3b7a37bd14fe0 1-6,8-49,51-56,58-81
+src/salesforce_mcp/server.py
+  s_16337f49bef67d::t_5bc0c0dd3e093e 8,21-26,40
+docs/ARCHITECTURE.md
+  s_16337f49bef67d::t_37afdd2bf28194 157-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "729c698ca72cd71e73881dc2a6a14600ef4b8dd9",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sudhakar6 <chsudhakars@hotmail.com>"
+    }
+  }
+}
