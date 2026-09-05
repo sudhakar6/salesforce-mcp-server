@@ -1,0 +1,35 @@
+.gitignore
+  s_16337f49bef67d::t_6efb88de3a618a 1-10
+src/salesforce_mcp/config.py
+  s_16337f49bef67d::t_8d7dc807eda977 1-50
+src/salesforce_mcp/errors.py
+  s_16337f49bef67d::t_a15c70c8d8a387 1-92
+src/salesforce_mcp/resources.py
+  s_16337f49bef67d::t_7e781d10b4ee20 1-39
+src/salesforce_mcp/tools/composite.py
+  s_16337f49bef67d::t_055b16fd9d3bcf 1-35
+src/salesforce_mcp/tools/describe.py
+  s_16337f49bef67d::t_c9ce6c08d8b6a8 1-39
+src/salesforce_mcp/tools/ops.py
+  s_16337f49bef67d::t_6dfd603dad7fb5 1-51
+src/salesforce_mcp/tools/query.py
+  s_16337f49bef67d::t_071a09c5d18101 1-51
+src/salesforce_mcp/tools/records.py
+  s_16337f49bef67d::t_ddf7746f6ff8e9 1-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "84a96b81f5ac745355755bd4e7fb4c7ac0f1bb57",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sudhakar6 <chsudhakars@hotmail.com>"
+    }
+  }
+}
