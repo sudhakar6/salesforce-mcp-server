@@ -1,0 +1,27 @@
+docs/DEPLOYMENT.md
+  s_16337f49bef67d::t_846a68a1ee3f15 7-26
+  s_16337f49bef67d::t_43f9b1f1840f2e 79-82
+README.md
+  s_16337f49bef67d::t_69c674df7ce576 3-5,7-20,26,30-66,77-86
+docs/ARCHITECTURE.md
+  s_16337f49bef67d::t_117c83d403bbbb 122-129,133-140
+  s_16337f49bef67d::t_e73f1edd46ac6d 3-7,10-18,20-24,26-27
+.gitignore
+  s_16337f49bef67d::t_a3badf3467da1e 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "3dda4c6b4fd6a862d1af8d1ece5be2feebf904a5",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  }
+}
