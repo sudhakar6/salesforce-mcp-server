@@ -1,0 +1,21 @@
+docs/EXTENDING.md
+  s_16337f49bef67d::t_393d97de667e14 145-154,160-162
+  s_16337f49bef67d::t_69dc45d7d9c2e9 136,138-139,144,159
+  s_16337f49bef67d::t_7b217cd241ea62 137,140-143,155-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "4f188a8d262f20353f2a61a947502bcc454fe43e",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sudhakar6 <chsudhakars@hotmail.com>"
+    }
+  }
+}
