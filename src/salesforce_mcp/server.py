@@ -5,6 +5,7 @@ import logging
 
 from mcp.server.mcpserver import MCPServer
 
+from . import prompts as prompts_module
 from . import resources as resources_module
 from .config import Settings
 from .http_auth import BearerAuthMiddleware
@@ -17,10 +18,12 @@ SERVER_INSTRUCTIONS = (
     "Tools and resources for interacting with a Salesforce org via its REST, "
     "Bulk API 2.0, and Composite APIs (SOQL query, SOSL search, record CRUD "
     "and upsert, bulk load, object describe/discovery, API usage, org health), "
-    "plus a pass-through for custom Apex REST endpoints the org exposes. This "
-    "is an independent, open-source implementation of the Model Context "
-    "Protocol spec against Salesforce's public APIs — it is not a Salesforce "
-    "product and is not affiliated with or endorsed by Salesforce."
+    "plus a pass-through for custom Apex REST endpoints the org exposes, and "
+    "ready-made prompts for common tasks (summarizing an Account, drafting a "
+    "follow-up email, checking data hygiene). This is an independent, "
+    "open-source implementation of the Model Context Protocol spec against "
+    "Salesforce's public APIs — it is not a Salesforce product and is not "
+    "affiliated with or endorsed by Salesforce."
 )
 
 
@@ -34,6 +37,7 @@ def build_server(settings: Settings) -> tuple[MCPServer, SalesforceClient]:
     for module in (query, records, describe, bulk, composite, ops, custom_api, org_health):
         module.register(mcp, get_client)
     resources_module.register(mcp, get_client)
+    prompts_module.register(mcp, get_client)
 
     return mcp, client
 

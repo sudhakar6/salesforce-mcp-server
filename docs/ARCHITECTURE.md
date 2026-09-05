@@ -154,6 +154,31 @@ every limit category, not just API requests, and license seat consumption.
 Reach for `sf_api_usage` in a loop; reach for `sf_org_health` once, for the
 full picture.
 
+## Prompts: the third MCP primitive, and a real surprise in how errors work
+
+`prompts.py` adds MCP's **Prompts** primitive — ready-made task templates
+(`summarize_account`, `draft_followup_email`, `data_hygiene_check`) a client
+surfaces directly to a person, rather than something the model decides to
+call. The first two show one pattern (fetch live data, embed it in the
+returned text); the third shows the other (a pure task description, no
+Salesforce call — the model reaches for `sf_query`/`sf_search` itself). Both
+are legitimate; see [USAGE.md#prompts](USAGE.md#prompts) for the concrete
+difference.
+
+The genuine surprise, found by testing rather than assumed: a plain
+`ValueError` raised inside a Tool becomes a clean message via `ToolError`
+(see "Error handling" above), but the *same pattern does not work for
+Prompts*. `Prompt.render()` — the SDK's own dispatcher, which runs before
+`get_prompt()`'s error handling ever sees anything — catches every exception
+a prompt function raises and replaces it with a generic "Error rendering
+prompt X", discarding the original message, *except* for `MCPError`, which
+passes through unchanged. Confirmed by writing a test that expected a
+specific `ValueError` message and watching it come back as the generic one
+instead. `as_prompt_error` (`errors.py`) is the fix: it catches
+`SalesforceApiError`/`ValueError` and re-raises as `MCPError(-32602, ...)`
+— the *only* exception type this primitive lets through with your message
+intact.
+
 ## Server-side auth is separate from Salesforce auth
 
 The OAuth Client Credentials Flow in `salesforce_client.py` is this server

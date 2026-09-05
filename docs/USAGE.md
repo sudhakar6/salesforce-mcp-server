@@ -190,6 +190,37 @@ tell me the health score"* — the model reads `sf_call_apex_rest`'s
 description, fills in `method`/`path` itself, and calls it exactly like any
 built-in tool.
 
+## Prompts
+
+*Not to be confused with the "example prompts" (things you type) in the next
+section — these are MCP's **Prompts** primitive: ready-made task templates
+the server exposes, distinct from Tools and Resources. See
+[MCP_PRIMER.md#the-three-roles-host-client-server](MCP_PRIMER.md#the-three-roles-host-client-server)
+for what a Prompt is if that distinction is new.*
+
+Three are built in — visible in a client's Prompts picker (in the Inspector,
+a separate tab from Tools/Resources) rather than something you have to know
+to ask for:
+
+| Prompt | Argument | What it does |
+|---|---|---|
+| `summarize_account` | `account_id` | Fetches the Account plus its 5 most recent Opportunities and Cases, and asks the model to summarize health and suggest next steps |
+| `draft_followup_email` | `opportunity_id` | Fetches the Opportunity plus its 5 most recent logged Tasks, and asks for a follow-up email referencing them |
+| `data_hygiene_check` | `sobject` | A pure task template, no pre-fetched data — asks the model to use `sf_query`/`sf_search` itself to find likely duplicates or incomplete records |
+
+The first two show one pattern (pull live data into the prompt so the model
+doesn't have to look it up first); the third shows the other (just phrase
+the task well and let the model reach for tools itself). Both are legitimate
+— which one fits depends on whether you already know what data the model
+will need.
+
+Try one via the Inspector's Prompts tab. In Claude Code, connected servers'
+prompts surface as slash commands shaped like
+`/mcp__salesforce__summarize_account` (type `/` to see the full list) —
+confirmed directly against Claude Code's docs. Claude Desktop's UI for this
+may differ; look for a prompts/slash-command picker there rather than
+assuming the exact same format.
+
 ## Example prompts → tool calls
 
 | You ask | Tool(s) likely called |

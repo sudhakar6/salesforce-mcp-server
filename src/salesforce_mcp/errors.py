@@ -6,6 +6,10 @@ from typing import TypeVar
 
 import httpx
 from mcp.server.mcpserver.exceptions import ResourceError, ResourceNotFoundError, ToolError
+from mcp.shared.exceptions import MCPError
+
+# JSON-RPC "Invalid params" — same code ResourceNotFoundError uses internally.
+_INVALID_PARAMS = -32602
 
 _T = TypeVar("_T")
 
@@ -88,5 +92,28 @@ def as_resource_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitab
             if exc.status_code == 404:
                 raise ResourceNotFoundError(str(exc)) from exc
             raise ResourceError(str(exc)) from exc
+
+    return wrapper
+
+
+def as_prompt_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable[_T]]:
+    """Translate SalesforceApiError/ValueError into a clean MCPError for a prompt function.
+
+    Prompt.render() (the SDK's own dispatcher) catches every exception a
+    prompt function raises and replaces it with a generic "Error rendering
+    prompt X" message — *except* MCPError, which passes through unchanged.
+    Verified directly: a plain ValueError does NOT reach the client with its
+    own message, unlike a ToolError from a tool. MCPError is the only way to
+    surface a specific, readable message from a prompt.
+    """
+
+    @functools.wraps(fn)
+    async def wrapper(*args, **kwargs) -> _T:
+        try:
+            return await fn(*args, **kwargs)
+        except SalesforceApiError as exc:
+            raise MCPError(_INVALID_PARAMS, str(exc)) from exc
+        except ValueError as exc:
+            raise MCPError(_INVALID_PARAMS, str(exc)) from exc
 
     return wrapper

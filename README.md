@@ -75,6 +75,9 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **Custom APIs** — `sf_call_apex_rest` calls any custom Apex REST endpoint
   (`@RestResource`) your org exposes, no code changes needed — see
   [docs/USAGE.md](docs/USAGE.md#calling-a-custom-apex-rest-api)
+- **Prompts** — ready-made task templates for common requests:
+  `summarize_account`, `draft_followup_email`, `data_hygiene_check` — see
+  [docs/USAGE.md](docs/USAGE.md#prompts)
 - **Resilient by default** — retries transient (5xx / `REQUEST_LIMIT_EXCEEDED`)
   Salesforce errors automatically; every other error comes back as a clean,
   readable message instead of a stack trace

@@ -93,6 +93,15 @@ Four things to know about the pieces you're reusing:
    pull into context without an explicit call, like the schema data in
    `resources.py`) — same idea, but `@mcp.resource(uri)` and
    `@as_resource_error` instead; see `src/salesforce_mcp/resources.py`.
+6. **If it's a Prompt** (a ready-made task template a person picks directly,
+   rather than something the model decides to call) — `@mcp.prompt()` and
+   `@as_prompt_error` instead of the Tool/Resource decorators; see
+   `src/salesforce_mcp/prompts.py`. One real gotcha here worth knowing before
+   you hit it yourself: a plain `ValueError`/`SalesforceApiError` does **not**
+   reach the client with its message for a Prompt the way it does for a
+   Tool — only `MCPError` does. `as_prompt_error` handles this; see
+   [ARCHITECTURE.md#prompts-the-third-mcp-primitive-and-a-real-surprise-in-how-errors-work](ARCHITECTURE.md#prompts-the-third-mcp-primitive-and-a-real-surprise-in-how-errors-work)
+   for why.
 
 ## Worked example: a dedicated tool for the AccountHealth API from USAGE.md
 
