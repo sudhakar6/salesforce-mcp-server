@@ -1,0 +1,35 @@
+README.md
+  s_16337f49bef67d::t_c3226a52d7b162 65,68-69
+  s_16337f49bef67d::t_a0126516e99e7d 16-19
+docs/DEPLOYMENT.md
+  s_16337f49bef67d::t_b3783cc01cea30 97-103
+docs/USAGE.md
+  s_16337f49bef67d::t_7a39a5a77dd2e2 60-66,68,75-89,91-117
+  s_16337f49bef67d::t_5f4de8616590d5 90
+  s_16337f49bef67d::t_75afece2c9934a 3-5,13-24
+  s_16337f49bef67d::t_e3b4ca15865e8a 25
+  s_16337f49bef67d::t_64d68732c0a38e 118
+docs/MCP_PRIMER.md
+  s_16337f49bef67d::t_81686ba616a786 1-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "a2ae7dfae7cd4972461262e5f97674d532b7520a",
+  "prompts": {},
+  "humans": {
+    "h_38c081fc8d45f8": {
+      "author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  },
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  }
+}
