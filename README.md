@@ -70,7 +70,8 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **Describe/discovery** — `sf_describe_object`, `sf_list_objects`, also
   available as MCP **Resources** (`salesforce://objects`,
   `salesforce://schema/{sobject}`)
-- **Ops** — `sf_api_usage`, live API-limit consumption
+- **Ops** — `sf_api_usage` (quick API-limit check), `sf_org_health` (fuller
+  report: org info, all limits, and license seat usage)
 - **Custom APIs** — `sf_call_apex_rest` calls any custom Apex REST endpoint
   (`@RestResource`) your org exposes, no code changes needed — see
   [docs/USAGE.md](docs/USAGE.md#calling-a-custom-apex-rest-api)

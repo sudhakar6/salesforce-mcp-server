@@ -9,18 +9,18 @@ from . import resources as resources_module
 from .config import Settings
 from .http_auth import BearerAuthMiddleware
 from .salesforce_client import SalesforceClient
-from .tools import bulk, composite, custom_api, describe, ops, query, records
+from .tools import bulk, composite, custom_api, describe, ops, org_health, query, records
 
 logger = logging.getLogger("salesforce_mcp")
 
 SERVER_INSTRUCTIONS = (
     "Tools and resources for interacting with a Salesforce org via its REST, "
     "Bulk API 2.0, and Composite APIs (SOQL query, SOSL search, record CRUD "
-    "and upsert, bulk load, object describe/discovery, API usage), plus a "
-    "pass-through for custom Apex REST endpoints the org exposes. This is an "
-    "independent, open-source implementation of the Model Context Protocol "
-    "spec against Salesforce's public APIs — it is not a Salesforce product "
-    "and is not affiliated with or endorsed by Salesforce."
+    "and upsert, bulk load, object describe/discovery, API usage, org health), "
+    "plus a pass-through for custom Apex REST endpoints the org exposes. This "
+    "is an independent, open-source implementation of the Model Context "
+    "Protocol spec against Salesforce's public APIs — it is not a Salesforce "
+    "product and is not affiliated with or endorsed by Salesforce."
 )
 
 
@@ -31,7 +31,7 @@ def build_server(settings: Settings) -> tuple[MCPServer, SalesforceClient]:
     def get_client() -> SalesforceClient:
         return client
 
-    for module in (query, records, describe, bulk, composite, ops, custom_api):
+    for module in (query, records, describe, bulk, composite, ops, custom_api, org_health):
         module.register(mcp, get_client)
     resources_module.register(mcp, get_client)
 

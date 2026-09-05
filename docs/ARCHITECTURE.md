@@ -139,6 +139,21 @@ REST does. A `sf_call_invocable_action` tool
 (`/services/data/v{ver}/actions/custom/{apex|flow}/{name}`) would follow the
 exact same pattern as `sf_call_apex_rest`, if that's ever wanted.
 
+## Two ops tools, two different jobs
+
+`sf_api_usage` (`tools/ops.py`) and `sf_org_health` (`tools/org_health.py`)
+both report on the org itself rather than its data, but they answer
+different questions at different costs. `sf_api_usage` is cache-first —
+usually free, reading the `Sforce-Limit-Info` header already captured from
+whatever the last call was — for a quick "how close to the limit are we"
+check mid-conversation. `sf_org_health` always makes five calls (the full
+`/limits` payload plus `Organization`, `UserLicense`,
+`PermissionSetLicense`, and `PackageLicense` queries) for a broader "what
+does this org have and how much of it is used" report — org edition/type,
+every limit category, not just API requests, and license seat consumption.
+Reach for `sf_api_usage` in a loop; reach for `sf_org_health` once, for the
+full picture.
+
 ## Server-side auth is separate from Salesforce auth
 
 The OAuth Client Credentials Flow in `salesforce_client.py` is this server

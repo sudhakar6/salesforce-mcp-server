@@ -31,6 +31,8 @@ first calls, in order:
 3. `sf_query` with `soql: "SELECT Id, Name FROM Account LIMIT 5"`
 4. Read the resource `salesforce://schema/Account` — same data as (2), via the
    Resources tab instead of Tools
+5. `sf_org_health` — org info, every limit category, and license seat usage
+   in one call
 
 ## Claude Desktop (stdio)
 
@@ -197,6 +199,7 @@ built-in tool.
 | "Create a new Account called 'Acme Test' and log a Contact for it" | `sf_composite(...)` — one atomic call creating both, the Contact referencing the Account via `@{NewAccount.id}` |
 | "Upsert this list of leads by their external CRM ID" | `sf_upsert_record` (few records) or `sf_bulk_load(operation="upsert", ...)` (many) |
 | "How close are we to today's API limit?" | `sf_api_usage()` |
+| "How healthy is our org — any licenses running low?" | `sf_org_health()` |
 
 ## Example: a composite request
 
