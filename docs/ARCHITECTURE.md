@@ -189,18 +189,21 @@ instead. `as_prompt_error` (`errors.py`) is the fix: it catches
 intact.
 
 A second surprise, this time on the client side rather than this server's
-code: a raw JSON-RPC probe over real stdio confirms the server is entirely
+code: a raw JSON-RPC probe over real stdio confirmed the server was entirely
 correct — `initialize` advertises the `prompts` capability and
-`prompts/list` returns all three prompts with full schemas. But manually
-testing three clients (Claude Desktop's chat tab, its Code tab, and the
-standalone Claude Code CLI) found **none of them currently expose a UI to
-invoke an MCP Prompt** — no `/`-menu entry, nothing. Typing a prompt's name
-as plain chat text doesn't invoke it either; the model just reacts to the
-literal string conversationally, with no connection to `prompts/get`. As of
-this writing, the MCP Inspector's Prompts tab is the only confirmed way to
-exercise these directly — see [USAGE.md#prompts](USAGE.md#prompts). Worth
-knowing before assuming a Prompt "isn't working": the gap may be the
-client, not the server.
+`prompts/list` returns all three prompts with full schemas. Neither Claude
+Desktop's `/`-menu, its Code tab, nor the standalone Claude Code CLI
+surfaced a way to invoke one, despite `/mcp__server__prompt` being
+documented elsewhere for Claude Code — until the **Connectors panel**
+turned out to be the actual place: it lists a connected server's prompts on
+hover, and picking one prompts for its required argument(s) before running
+it. Confirmed working end to end this way — `summarize_account` correctly
+asked for `account_id` and used it. Typing a prompt's name as plain chat
+text still doesn't invoke it, and never will; the model just reacts to the
+literal string conversationally (with full access to `sf_query` and no
+`account_id` constraint), which is a different code path that happens to
+share a name, not a broken prompt. See
+[USAGE.md#prompts](USAGE.md#prompts) for the confirmed how-to.
 
 ## Server-side auth is separate from Salesforce auth
 

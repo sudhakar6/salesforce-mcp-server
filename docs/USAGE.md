@@ -36,8 +36,16 @@ first calls, in order:
 
 ## Claude Desktop (stdio)
 
-Add to Claude Desktop's MCP config
-(`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+**1. Open the config file** — in the app, **Settings → Developer → Edit
+Config**. That opens
+`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS
+directly in your editor (confirmed navigation path — the file can be in a
+non-obvious location depending on the app build, so use this instead of
+guessing the path yourself).
+
+**2. Add an `mcpServers` key — don't replace the file.** This file likely
+already has other content (app preferences, etc.) that must stay intact.
+Add `mcpServers` alongside whatever's already there, for example:
 
 ```json
 {
@@ -51,13 +59,35 @@ Add to Claude Desktop's MCP config
         "SF_CLIENT_SECRET": "your-client-secret"
       }
     }
-  }
+  },
+  "...": "whatever else was already in this file, unchanged"
 }
 ```
 
-Restart Claude Desktop, then ask it something that needs Salesforce data —
-e.g. *"List the open opportunities over $10,000 closing this quarter"* or
-*"Find every Account or Contact mentioning 'Acme'"* (exercises `sf_search`).
+Use the absolute path to *this project's* venv Python (`which python` with
+the venv activated, or `.venv/bin/python` from the project root) — not a
+system Python, which won't have the package installed.
+
+**3. Validate the JSON before restarting** — a syntax error here can break
+the file for the whole app. Quick check:
+```bash
+python3 -c "import json; json.load(open('/absolute/path/to/claude_desktop_config.json')); print('valid JSON')"
+```
+
+**4. Restart the app completely.** Config is only read at startup — editing
+the file while the app is running has no effect until it restarts.
+
+**5. Confirm the connection, then try a Tool and a Prompt** — these are
+discovered differently:
+- **Tools** — just ask something that needs Salesforce data in normal chat,
+  e.g. *"List the open opportunities over $10,000 closing this quarter"* or
+  *"Find every Account or Contact mentioning 'Acme'"* (exercises `sf_search`).
+  The model decides on its own to call the right tool.
+- **Prompts** — these need a different, dedicated picker; see
+  [Prompts](#prompts) below for the confirmed way to find and invoke one
+  (it's not a `/`-command, and typing the prompt's name as a chat message
+  does **not** invoke it — that's a completely different, unconstrained code
+  path, not a shortcut to the real thing).
 
 **If you built the Docker image instead of setting up Python** (Quickstart's
 Option B), point Claude Desktop at `docker run` instead — the bare `-e VAR`
@@ -214,28 +244,31 @@ the task well and let the model reach for tools itself). Both are legitimate
 — which one fits depends on whether you already know what data the model
 will need.
 
-**Client support, tested directly rather than assumed:** the server side is
-confirmed correct — `initialize` advertises the `prompts` capability and
+**Client support, tested directly rather than assumed** — and corrected once
+already, so this is worth being precise about. The server side was always
+confirmed correct: `initialize` advertises the `prompts` capability and
 `prompts/list` returns all three with full schemas over the real stdio wire
-protocol (verified with a raw JSON-RPC probe, not just an in-process check).
-But **none of the three clients tested — Claude Desktop's regular chat tab,
-its Code tab, or the standalone Claude Code CLI — currently surface a UI for
-invoking an MCP Prompt** (no `/`-menu entry, no `/mcp__server__prompt`
-despite that format being documented elsewhere for Claude Code). This lines
-up with Prompts being, by a wide margin, the least-implemented part of MCP
-across clients generally — not specific to this server.
+protocol. Neither `/`-menus nor `/mcp__server__prompt` surfaced them in
+Claude Desktop's chat tab, its Code tab, or the Claude Code CLI.
 
-**Today, the MCP Inspector's Prompts tab is the only confirmed way to invoke
-these directly.** Typing the prompt's name as a plain chat message (e.g.
-literally typing `summarize_account`) does **not** invoke it either — that's
-just text the model reads and reacts to conversationally, with no connection
-to `prompts/get` at all, which is why it behaves nothing like the real
-prompt (no specific Account, no embedded Opportunity/Case data — just the
-model's own guess at achieving something similar via `sf_query`).
+**The confirmed way, for Claude Desktop:** find the **Connectors** entry
+near the message box (a `+`/attachment-style picker) — it offers an option
+like *"Add from Salesforce"*; hovering it lists this server's prompts.
+Picking one prompts you for its required argument (e.g. `account_id`)
+before running it — exactly the intended flow, confirmed end to end
+(`summarize_account` correctly asked for the ID and used it). The MCP
+Inspector's Prompts tab remains the quickest way to test one during
+development, without needing a full client.
 
-If a client you're using ever adds prompt-picker support, revisit this —
-the tools/prompts data on the server side is already correct and won't need
-to change.
+Typing the prompt's name as a plain chat message (e.g. literally typing
+`summarize_account`) does **not** invoke it — that's just text the model
+reads and reacts to conversationally, with no connection to `prompts/get`
+at all. This is why it behaves nothing like the real prompt: no specific
+Account, no embedded Opportunity/Case data, no enforced `account_id` — just
+the model's own judgment call about how to be helpful, which (having full
+access to `sf_query`) can include browsing a chunk of Accounts and asking
+you to pick one. That's not a bug in the prompt; it's a completely different
+code path that happens to share a name with it.
 
 ## Example prompts → tool calls
 
