@@ -1,0 +1,31 @@
+docs/ARCHITECTURE.md
+  s_16337f49bef67d::t_afe11f27d5de9d 142-156
+docs/USAGE.md
+  s_16337f49bef67d::t_66f157e786a07c 202
+  s_16337f49bef67d::t_f01230fb7d7628 34-35
+src/salesforce_mcp/tools/org_health.py
+  s_16337f49bef67d::t_4a33dd86a64819 1-60
+tests/tools/test_org_health.py
+  s_16337f49bef67d::t_fbbae2848a46db 3-4,13-15,29,32-40,50,52-54,56-62
+  s_16337f49bef67d::t_4f01404208558d 1-2,5-12,16-28,30-31,41-49,51,55,63-65
+src/salesforce_mcp/server.py
+  s_16337f49bef67d::t_6ba2aeb58d010c 12,19-23,34
+README.md
+  s_16337f49bef67d::t_98f4726babdb58 73-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "ce47f0db313b2c9180f42f616192e115b4ee9bd8",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sudhakar6 <chsudhakars@hotmail.com>"
+    }
+  }
+}
