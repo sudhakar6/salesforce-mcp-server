@@ -1,0 +1,21 @@
+docs/MCP_PRIMER.md
+  s_16337f49bef67d::t_4a7b729ea23a1e 89-107
+README.md
+  s_16337f49bef67d::t_5e672c7efdc6d0 52-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "f423b90fd6de30bb498984c3124570a724e146f1",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "SudhakarDH <sudhakara.chintapalli@deliveryhero.com>"
+    }
+  }
+}
