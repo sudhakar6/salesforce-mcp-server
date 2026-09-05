@@ -214,12 +214,28 @@ the task well and let the model reach for tools itself). Both are legitimate
 — which one fits depends on whether you already know what data the model
 will need.
 
-Try one via the Inspector's Prompts tab. In Claude Code, connected servers'
-prompts surface as slash commands shaped like
-`/mcp__salesforce__summarize_account` (type `/` to see the full list) —
-confirmed directly against Claude Code's docs. Claude Desktop's UI for this
-may differ; look for a prompts/slash-command picker there rather than
-assuming the exact same format.
+**Client support, tested directly rather than assumed:** the server side is
+confirmed correct — `initialize` advertises the `prompts` capability and
+`prompts/list` returns all three with full schemas over the real stdio wire
+protocol (verified with a raw JSON-RPC probe, not just an in-process check).
+But **none of the three clients tested — Claude Desktop's regular chat tab,
+its Code tab, or the standalone Claude Code CLI — currently surface a UI for
+invoking an MCP Prompt** (no `/`-menu entry, no `/mcp__server__prompt`
+despite that format being documented elsewhere for Claude Code). This lines
+up with Prompts being, by a wide margin, the least-implemented part of MCP
+across clients generally — not specific to this server.
+
+**Today, the MCP Inspector's Prompts tab is the only confirmed way to invoke
+these directly.** Typing the prompt's name as a plain chat message (e.g.
+literally typing `summarize_account`) does **not** invoke it either — that's
+just text the model reads and reacts to conversationally, with no connection
+to `prompts/get` at all, which is why it behaves nothing like the real
+prompt (no specific Account, no embedded Opportunity/Case data — just the
+model's own guess at achieving something similar via `sf_query`).
+
+If a client you're using ever adds prompt-picker support, revisit this —
+the tools/prompts data on the server side is already correct and won't need
+to change.
 
 ## Example prompts → tool calls
 

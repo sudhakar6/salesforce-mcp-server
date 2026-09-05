@@ -24,11 +24,61 @@ async def test_sf_describe_object(tools):
     assert result["name"] == "Account"
 
 
-async def test_sf_list_objects(tools):
+_RAW_SOBJECTS = [
+    {
+        "name": "Account",
+        "label": "Account",
+        "custom": False,
+        "queryable": True,
+        "createable": True,
+        "updateable": True,
+        "deletable": True,
+        "urls": {"sobject": "/services/data/v61.0/sobjects/Account"},
+    },
+    {
+        "name": "My_Custom_Object__c",
+        "label": "My Custom Object",
+        "custom": True,
+        "queryable": True,
+        "createable": True,
+        "updateable": True,
+        "deletable": True,
+        "urls": {"sobject": "/services/data/v61.0/sobjects/My_Custom_Object__c"},
+    },
+]
+
+
+async def test_sf_list_objects_trims_fields_and_reports_counts(tools):
     async with respx.mock(assert_all_called=True) as router:
         router.get(f"{DATA_BASE}/sobjects").mock(
-            return_value=httpx.Response(200, json={"sobjects": [{"name": "Account"}, {"name": "Contact"}]})
+            return_value=httpx.Response(200, json={"sobjects": _RAW_SOBJECTS})
         )
         result = await tools["sf_list_objects"]()
 
-    assert [o["name"] for o in result["sobjects"]] == ["Account", "Contact"]
+    assert result["total_in_org"] == 2
+    assert result["matched"] == 2
+    assert [o["name"] for o in result["objects"]] == ["Account", "My_Custom_Object__c"]
+    assert "urls" not in result["objects"][0]
+
+
+async def test_sf_list_objects_custom_only_filter(tools):
+    async with respx.mock(assert_all_called=True) as router:
+        router.get(f"{DATA_BASE}/sobjects").mock(
+            return_value=httpx.Response(200, json={"sobjects": _RAW_SOBJECTS})
+        )
+        result = await tools["sf_list_objects"](custom_only=True)
+
+    assert result["total_in_org"] == 2
+    assert result["matched"] == 1
+    assert result["objects"][0]["name"] == "My_Custom_Object__c"
+
+
+async def test_sf_list_objects_name_contains_filter(tools):
+    async with respx.mock(assert_all_called=True) as router:
+        router.get(f"{DATA_BASE}/sobjects").mock(
+            return_value=httpx.Response(200, json={"sobjects": _RAW_SOBJECTS})
+        )
+        result = await tools["sf_list_objects"](name_contains="custom")
+
+    assert result["matched"] == 1
+    assert result["objects"][0]["name"] == "My_Custom_Object__c"

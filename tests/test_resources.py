@@ -22,12 +22,15 @@ def mcp(authed_client):
 async def test_objects_resource_returns_global_describe(mcp):
     async with respx.mock(assert_all_called=True) as router:
         router.get(f"{DATA_BASE}/sobjects").mock(
-            return_value=httpx.Response(200, json={"sobjects": [{"name": "Account"}]})
+            return_value=httpx.Response(
+                200, json={"sobjects": [{"name": "Account", "label": "Account", "custom": False}]}
+            )
         )
         contents = await mcp.read_resource("salesforce://objects")
 
     body = json.loads(contents[0].content)
-    assert body["sobjects"] == [{"name": "Account"}]
+    assert body["total_in_org"] == 1
+    assert body["objects"][0]["name"] == "Account"
 
 
 async def test_schema_resource_returns_object_describe(mcp):

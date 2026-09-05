@@ -111,6 +111,15 @@ the org's object list" before the model even starts reasoning). Exposing one
 capability both ways is a small, concrete way to show what MCP's Resources
 primitive is actually for, rather than only ever reaching for Tools.
 
+`list_objects()` trims Salesforce's raw global-describe response (~25
+fields per object, including a nested `urls` block) down to
+name/label/custom/queryable/createable/updateable/deletable, and
+`sf_list_objects` adds optional `name_contains`/`custom_only` filters on
+top. Found via real testing, not anticipated: a Developer Edition org's
+800+ standard objects, returned raw, was large enough to exhaust a model's
+context on its own. Since both the Tool and the Resource share this one
+function, fixing it once fixed both.
+
 ## A generic escape hatch for custom Apex REST endpoints
 
 Every tool up to this point is bound to a fixed, standard Salesforce
@@ -178,6 +187,20 @@ instead. `as_prompt_error` (`errors.py`) is the fix: it catches
 `SalesforceApiError`/`ValueError` and re-raises as `MCPError(-32602, ...)`
 — the *only* exception type this primitive lets through with your message
 intact.
+
+A second surprise, this time on the client side rather than this server's
+code: a raw JSON-RPC probe over real stdio confirms the server is entirely
+correct — `initialize` advertises the `prompts` capability and
+`prompts/list` returns all three prompts with full schemas. But manually
+testing three clients (Claude Desktop's chat tab, its Code tab, and the
+standalone Claude Code CLI) found **none of them currently expose a UI to
+invoke an MCP Prompt** — no `/`-menu entry, nothing. Typing a prompt's name
+as plain chat text doesn't invoke it either; the model just reacts to the
+literal string conversationally, with no connection to `prompts/get`. As of
+this writing, the MCP Inspector's Prompts tab is the only confirmed way to
+exercise these directly — see [USAGE.md#prompts](USAGE.md#prompts). Worth
+knowing before assuming a Prompt "isn't working": the gap may be the
+client, not the server.
 
 ## Server-side auth is separate from Salesforce auth
 

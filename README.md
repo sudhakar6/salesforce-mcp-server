@@ -67,9 +67,10 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   large for the one-record-per-call REST tools above
 - **Composite** — `sf_composite`, to bundle several sub-requests into one
   atomic call
-- **Describe/discovery** — `sf_describe_object`, `sf_list_objects`, also
-  available as MCP **Resources** (`salesforce://objects`,
-  `salesforce://schema/{sobject}`)
+- **Describe/discovery** — `sf_describe_object`, `sf_list_objects` (trimmed
+  fields + optional `name_contains`/`custom_only` filters, so it doesn't
+  dump 800+ objects' full raw metadata), also available as MCP **Resources**
+  (`salesforce://objects`, `salesforce://schema/{sobject}`)
 - **Ops** — `sf_api_usage` (quick API-limit check), `sf_org_health` (fuller
   report: org info, all limits, and license seat usage)
 - **Custom APIs** — `sf_call_apex_rest` calls any custom Apex REST endpoint
