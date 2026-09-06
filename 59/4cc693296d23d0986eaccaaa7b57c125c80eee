@@ -1,0 +1,19 @@
+.github/workflows/publish.yml
+  s_16337f49bef67d::t_f5c30881b6693a 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "594cc693296d23d0986eaccaaa7b57c125c80eee",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sudhakar6 <chsudhakars@hotmail.com>"
+    }
+  }
+}
