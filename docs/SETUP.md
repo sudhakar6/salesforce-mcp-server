@@ -134,6 +134,9 @@ to log in to, it authenticates automatically.
 npx @modelcontextprotocol/inspector python -m salesforce_mcp.server
 ```
 
+(Installed via `uvx` instead — README's Quickstart Option A? Use
+`npx @modelcontextprotocol/inspector uvx sf-mcp-server` instead.)
+
 Open the Inspector's URL, connect, and try `sf_list_objects` — you should see
 your org's full object list back.
 

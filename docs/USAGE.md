@@ -10,6 +10,13 @@ source .venv/bin/activate
 npx @modelcontextprotocol/inspector python -m salesforce_mcp.server
 ```
 
+**Installed via `uvx` instead ([README's Quickstart Option A](../README.md#quickstart))?**
+Point the Inspector at that command instead of the venv Python:
+
+```bash
+npx @modelcontextprotocol/inspector uvx sf-mcp-server
+```
+
 > **What's `npx`, and why does this need it?** The
 > [MCP Inspector](https://github.com/modelcontextprotocol/inspector) — the
 > standard debugging UI for any MCP server — is a Node.js tool published to
@@ -67,6 +74,34 @@ Add `mcpServers` alongside whatever's already there, for example:
 Use the absolute path to *this project's* venv Python (`which python` with
 the venv activated, or `.venv/bin/python` from the project root) — not a
 system Python, which won't have the package installed.
+
+**Installed via `uvx` instead?** Use `uvx` as the command directly — no
+absolute path needed, since it's already on `PATH`:
+
+```json
+{
+  "mcpServers": {
+    "salesforce": {
+      "command": "uvx",
+      "args": ["sf-mcp-server"],
+      "env": {
+        "SF_LOGIN_URL": "https://your-domain.my.salesforce.com",
+        "SF_CLIENT_ID": "your-client-id",
+        "SF_PKCE_TOKEN_CACHE": "/Users/you/.sf-mcp-server/pkce_token.json"
+      }
+    }
+  }
+}
+```
+
+That `SF_PKCE_TOKEN_CACHE` line matters here specifically — Claude Desktop
+launches the server from its own working directory, not wherever you ran
+`sf-mcp-login`, so the default relative cache path won't be found unless
+you pin it to an absolute path. See
+[AUTHENTICATION.md](AUTHENTICATION.md#option-a-login-with-salesforce-pkce-default)
+for why. (Run `uvx --from sf-mcp-server sf-mcp-login` once first, with the
+same `SF_PKCE_TOKEN_CACHE` value exported, so the file this config points
+at actually exists before Claude Desktop tries to use it.)
 
 **3. Validate the JSON before restarting** — a syntax error here can break
 the file for the whole app. Quick check:

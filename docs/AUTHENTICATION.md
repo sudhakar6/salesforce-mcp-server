@@ -66,6 +66,20 @@ SF_PKCE_REDIRECT_PORT=8765            # must match your Callback URL
 SF_PKCE_TOKEN_CACHE=.salesforce_pkce_token.json
 ```
 
+> **Using `uvx`, or an MCP client config (Claude Desktop/Claude Code),
+> instead of always `cd`-ing into the project directory? Set
+> `SF_PKCE_TOKEN_CACHE` to an absolute path explicitly** — e.g.
+> `SF_PKCE_TOKEN_CACHE=/Users/you/.sf-mcp-server/pkce_token.json`. The
+> default shown above is resolved relative to whatever directory the
+> server process is actually launched from. That's harmless with the
+> from-source flow (you always `cd` into the same project root first), but
+> `uvx` and MCP clients don't guarantee a consistent launch directory — a
+> client may start the server from a different working directory than the
+> one you ran `sf-mcp-login` from, and it'll report "no cached login
+> found" even though you already logged in, just to a file it can't see
+> from its actual cwd. An absolute path means the same physical file
+> regardless of launch directory, closing that gap.
+
 ### Two ways to actually log in
 
 **Before starting the server, from a terminal:**
@@ -141,6 +155,10 @@ A few things that follow directly from that:
   not an OS keychain or secret manager. Fine for personal, local use; a
   known, deliberate limitation of this learning project, not something to
   point at a shared production deployment as-is.
+- **Its path is resolved relative to wherever the server process launches
+  from**, not a fixed location — see the `SF_PKCE_TOKEN_CACHE` callout
+  above if you're using `uvx` or an MCP client config, where that launch
+  directory isn't guaranteed to be consistent.
 
 ## Option B: Client Credentials Flow
 

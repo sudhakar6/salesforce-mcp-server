@@ -19,10 +19,36 @@ free [Developer Edition org](https://developer.salesforce.com/signup) works
 fine — and its Consumer Key in hand. [docs/SETUP.md](docs/SETUP.md) walks
 through creating that (10–15 min); do it first, then come back here.
 
-Then pick whichever of these you already have installed — both get you to
-the same place, a running server:
+Three ways to get a running server — pick whichever fits:
 
-**Option A — Python 3.11+** (no Docker needed):
+**Option A — `uvx`** (fastest; no clone, no venv; requires [uv](https://docs.astral.sh/uv/getting-started/installation/)):
+
+```bash
+export SF_LOGIN_URL=https://your-domain.my.salesforce.com
+export SF_CLIENT_ID=your-client-id
+uvx --from sf-mcp-server sf-mcp-login   # one-time interactive login — opens your browser
+uvx sf-mcp-server
+```
+
+(`sf-mcp-login` needs the explicit `--from sf-mcp-server` — `uv` only infers
+the package name from a bare command when they match, and this package
+provides two commands. `sf-mcp-server` matches its own package name, so it
+doesn't need `--from`.)
+
+Or drop straight into an MCP client's config (Claude Desktop's
+`claude_desktop_config.json`, Claude Code's `.mcp.json`) with `"command":
+"uvx", "args": ["sf-mcp-server"]` and the same env vars, **plus
+`SF_PKCE_TOKEN_CACHE` set to an absolute path** (the client launches the
+server from its own working directory, not wherever you ran
+`sf-mcp-login`, so the default relative cache path won't be found
+otherwise) — see [docs/USAGE.md](docs/USAGE.md) for the full config
+example. That login step is only needed once — see
+[docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for what it does and why,
+and for the alternative Client Credentials Flow (`SF_CLIENT_SECRET`, no
+login step) if you'd rather use a fixed service identity instead.
+
+**Option B — Python from source** (for contributing, or if you'd rather not
+use `uv`):
 
 ```bash
 git clone <this-repo-url> && cd salesforce-mcp-server
@@ -33,12 +59,7 @@ python -m salesforce_mcp.login   # one-time interactive login — opens your bro
 python -m salesforce_mcp.server
 ```
 
-That last login step is only needed once — see
-[docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for what it does and why,
-and for the alternative Client Credentials Flow (`SF_CLIENT_SECRET`, no
-login step) if you'd rather use a fixed service identity instead.
-
-**Option B — Docker** (no Python setup needed; requires Docker installed
+**Option C — Docker** (no Python setup needed; requires Docker installed
 *and running* — check with `docker info`):
 
 ```bash
@@ -60,11 +81,11 @@ a container for that flow to use. See
 in a container anyway (mount a pre-existing `.salesforce_pkce_token.json`
 from the host).
 
-Either way, that's it running. **Next:** point the
+Whichever you pick, that's it running. **Next:** point the
 [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or Claude
 Desktop at it and actually try a tool — see [docs/USAGE.md](docs/USAGE.md).
 
-Quick note on that `-e MCP_TRANSPORT=stdio` flag in Option B: **Python vs.
+Quick note on that `-e MCP_TRANSPORT=stdio` flag in Option C: **Python vs.
 Docker and stdio vs. HTTP are two separate choices, not tied together** —
 Python defaults to stdio and Docker's image defaults to HTTP purely for
 convenience, but all four combinations actually work. See
@@ -101,10 +122,11 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   delete (`sf_delete_record`, `sf_bulk_load(operation="delete")`); disable
   with `SF_ELICITATION_ENABLED=false` — see
   [docs/USAGE.md](docs/USAGE.md#elicitation)
-- **Two auth options** — the default OAuth Client Credentials Flow (one
-  fixed service identity), or an interactive "Login with Salesforce"
-  (OAuth Authorization Code + PKCE) via `python -m salesforce_mcp.login`,
-  switched with `SF_AUTH_FLOW=pkce` — see
+- **Two auth options** — the default interactive "Login with Salesforce"
+  (OAuth Authorization Code + PKCE, per-user), via `python -m
+  salesforce_mcp.login` or the in-session `sf_login` tool, or the OAuth
+  Client Credentials Flow (one fixed service identity) for headless/shared
+  use, switched with `SF_AUTH_FLOW=client_credentials` — see
   [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md)
 - **Resilient by default** — retries transient (5xx / `REQUEST_LIMIT_EXCEEDED`)
   Salesforce errors automatically; every other error comes back as a clean,
