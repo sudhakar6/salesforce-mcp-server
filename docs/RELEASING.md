@@ -74,3 +74,25 @@ https://test.pypi.org/legacy/`, with its own separate trusted-publisher
 config), or just accept that the first "test" of this pipeline is also
 your next real release — which is what actually happened the first time
 this workflow ran.
+
+## A real worked example: the `v0.1.1` release
+
+The first actual run of this pipeline, end to end, exactly following the
+checklist above:
+
+- [`47467c0`](https://github.com/sudhakar6/salesforce-mcp-server/commit/47467c0) —
+  an unrelated test fix, committed *before* the version bump (kept as its
+  own commit rather than folded into the release commit, so the tagged
+  commit is a clean, minimal version bump)
+- [`6dd749e`](https://github.com/sudhakar6/salesforce-mcp-server/commit/6dd749e) —
+  "Bump version to 0.1.1", the commit `v0.1.1` actually points at
+- `git tag v0.1.1 && git push origin v0.1.1` — the trigger
+- [Actions run 34039577880](https://github.com/sudhakar6/salesforce-mcp-server/actions/runs/34039577880) —
+  all three jobs (`test`, `build`, `publish`) green, ~1 minute total
+- [pypi.org/project/sf-mcp-server](https://pypi.org/project/sf-mcp-server/) —
+  shows `0.1.1` immediately after
+
+If you're setting up this same pattern elsewhere, or just want to see what
+"the pipeline actually worked" looks like before trusting it on your own
+project, that run is the smallest real example of this checklist executed
+in full.
