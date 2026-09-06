@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .env
+.salesforce_pkce_token.json
 dist/
 build/
 .DS_Store

@@ -11,7 +11,7 @@ from .config import Settings
 from .http_auth import BearerAuthMiddleware
 from .pubsub_client import PubSubClient
 from .salesforce_client import SalesforceClient
-from .tools import bulk, composite, custom_api, describe, ops, org_health, query, records, subscribe
+from .tools import bulk, composite, custom_api, describe, ops, org_health, query, records, sf_login, subscribe
 
 logger = logging.getLogger("salesforce_mcp")
 
@@ -23,9 +23,11 @@ SERVER_INSTRUCTIONS = (
     "ready-made prompts for common tasks (summarizing an Account, drafting a "
     "follow-up email, checking data hygiene), and a bounded platform-event/CDC "
     "replay tool. Broad queries/searches and deletes ask for confirmation via "
-    "MCP Elicitation first (disable with SF_ELICITATION_ENABLED=false). This "
-    "is an independent, open-source implementation of the Model Context "
-    "Protocol spec against Salesforce's public APIs — it is not a Salesforce "
+    "MCP Elicitation first (disable with SF_ELICITATION_ENABLED=false). "
+    "Authenticates via interactive \"Login with Salesforce\" (PKCE) by "
+    "default — call sf_login if another tool fails saying no cached login "
+    "was found. This is an independent, open-source implementation of the "
+    "Model Context Protocol spec against Salesforce's public APIs — it is not a Salesforce "
     "product and is not affiliated with or endorsed by Salesforce."
 )
 
@@ -41,14 +43,21 @@ def build_server(settings: Settings) -> tuple[MCPServer, SalesforceClient, PubSu
     def get_pubsub_client() -> PubSubClient:
         return pubsub_client
 
-    for module in (describe, composite, ops, custom_api, org_health):
-        module.register(mcp, get_client)
+    # Registration order is tools/list's order (this SDK returns tools in
+    # insertion order, unsorted) — grouped here to match README's feature
+    # list: Query/Search, Record CRUD, Bulk API, Composite, Describe/
+    # Discovery, Ops, Custom APIs, Platform Events, Login last (the odd one
+    # out — auth, not a Salesforce data operation).
     query.register(mcp, get_client, elicitation_enabled=settings.elicitation_enabled)
     records.register(mcp, get_client, elicitation_enabled=settings.elicitation_enabled)
     bulk.register(mcp, get_client, elicitation_enabled=settings.elicitation_enabled)
+    for module in (composite, describe, ops, org_health, custom_api):
+        module.register(mcp, get_client)
     subscribe.register(mcp, get_client, get_pubsub_client)
     resources_module.register(mcp, get_client)
     prompts_module.register(mcp, get_client)
+    if settings.auth_flow == "pkce":
+        sf_login.register(mcp, settings)
 
     return mcp, client, pubsub_client
 

@@ -4,30 +4,33 @@ import asyncio
 
 import httpx
 
+from .auth import SalesforceAuthError, build_auth
 from .config import Settings
 from .errors import raise_for_salesforce_error
 
 MAX_ATTEMPTS = 3
 BACKOFF_BASE_SECONDS = 0.5
 
-
-class SalesforceAuthError(RuntimeError):
-    """Raised when authenticating to Salesforce fails."""
+__all__ = ["SalesforceAuthError", "SalesforceClient"]
 
 
 class SalesforceClient:
     """Thin async wrapper around Salesforce's REST/Bulk/Composite APIs.
 
-    Handles OAuth 2.0 Client Credentials Flow authentication, transparent
-    re-authentication on a 401, and retry-with-backoff for transient (5xx or
+    Handles authentication (Client Credentials Flow or PKCE refresh — see
+    `auth/`, picked via `settings.auth_flow`), transparent re-authentication
+    on a 401, and retry-with-backoff for transient (5xx or
     REQUEST_LIMIT_EXCEEDED) failures. Endpoint-specific request shapes live in
     the tools/ modules; this class only knows how to talk to Salesforce, not
-    what to ask it for.
+    what to ask it for — and it doesn't know which auth flow is active
+    either, only that `self._auth.get_access_token(http)` returns
+    `(access_token, instance_url)` regardless of which one it is.
     """
 
     def __init__(self, settings: Settings):
         self._settings = settings
         self._http = httpx.AsyncClient(timeout=60.0)
+        self._auth = build_auth(settings)
         self._access_token: str | None = None
         self._instance_url: str | None = None
         self._last_limit_info: str | None = None
@@ -44,21 +47,7 @@ class SalesforceClient:
         return f"{self._instance_url}/services/data/{self._settings.api_version}{path}"
 
     async def _authenticate(self) -> None:
-        response = await self._http.post(
-            f"{self._settings.login_url}/services/oauth2/token",
-            data={
-                "grant_type": "client_credentials",
-                "client_id": self._settings.client_id,
-                "client_secret": self._settings.client_secret,
-            },
-        )
-        if response.status_code != 200:
-            raise SalesforceAuthError(
-                f"Salesforce authentication failed ({response.status_code}): {response.text}"
-            )
-        body = response.json()
-        self._access_token = body["access_token"]
-        self._instance_url = body["instance_url"]
+        self._access_token, self._instance_url = await self._auth.get_access_token(self._http)
 
     async def request(
         self,

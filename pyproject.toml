@@ -36,6 +36,7 @@ codegen = [
 
 [project.scripts]
 salesforce-mcp-server = "salesforce_mcp.server:main"
+salesforce-mcp-login = "salesforce_mcp.login:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/salesforce_mcp"]

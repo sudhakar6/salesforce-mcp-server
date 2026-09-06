@@ -8,6 +8,8 @@ import httpx
 from mcp.server.mcpserver.exceptions import ResourceError, ResourceNotFoundError, ToolError
 from mcp.shared.exceptions import MCPError
 
+from .auth.errors import SalesforceAuthError
+
 # JSON-RPC "Invalid params" — same code ResourceNotFoundError uses internally.
 _INVALID_PARAMS = -32602
 
@@ -61,19 +63,26 @@ def _extract_error_detail(response: httpx.Response) -> str:
 
 
 def as_tool_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable[_T]]:
-    """Translate SalesforceApiError/ValueError into ToolError for a tool function.
+    """Translate SalesforceApiError/SalesforceAuthError/ValueError into ToolError
+    for a tool function.
 
     ToolError's message reaches the model as a clean, actionable string instead
     of a generic "Error executing tool" crash message. ValueError is included
     since tools raise it for their own argument validation (e.g. an unsupported
-    bulk operation name), not just Salesforce API failures.
+    bulk operation name), not just Salesforce API failures. SalesforceAuthError
+    is included because every tool calls SalesforceClient.request() (or, for
+    sf_subscribe_platform_event, PubSubClient — which authenticates via the
+    same SalesforceClient), and a real auth failure — bad credentials, or a
+    PKCE refresh token that's missing/expired — is exactly as actionable as a
+    Salesforce API error; without this it fell through as the same generic
+    crash message, confirmed by hitting it for real testing PKCE mode.
     """
 
     @functools.wraps(fn)
     async def wrapper(*args, **kwargs) -> _T:
         try:
             return await fn(*args, **kwargs)
-        except SalesforceApiError as exc:
+        except (SalesforceApiError, SalesforceAuthError) as exc:
             raise ToolError(str(exc)) from exc
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
@@ -82,7 +91,8 @@ def as_tool_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable[_
 
 
 def as_resource_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable[_T]]:
-    """Translate SalesforceApiError into ResourceError/ResourceNotFoundError for a resource handler."""
+    """Translate SalesforceApiError/SalesforceAuthError into
+    ResourceError/ResourceNotFoundError for a resource handler."""
 
     @functools.wraps(fn)
     async def wrapper(*args, **kwargs) -> _T:
@@ -92,12 +102,15 @@ def as_resource_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitab
             if exc.status_code == 404:
                 raise ResourceNotFoundError(str(exc)) from exc
             raise ResourceError(str(exc)) from exc
+        except SalesforceAuthError as exc:
+            raise ResourceError(str(exc)) from exc
 
     return wrapper
 
 
 def as_prompt_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable[_T]]:
-    """Translate SalesforceApiError/ValueError into a clean MCPError for a prompt function.
+    """Translate SalesforceApiError/SalesforceAuthError/ValueError into a clean
+    MCPError for a prompt function.
 
     Prompt.render() (the SDK's own dispatcher) catches every exception a
     prompt function raises and replaces it with a generic "Error rendering
@@ -111,7 +124,7 @@ def as_prompt_error(fn: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable
     async def wrapper(*args, **kwargs) -> _T:
         try:
             return await fn(*args, **kwargs)
-        except SalesforceApiError as exc:
+        except (SalesforceApiError, SalesforceAuthError) as exc:
             raise MCPError(_INVALID_PARAMS, str(exc)) from exc
         except ValueError as exc:
             raise MCPError(_INVALID_PARAMS, str(exc)) from exc

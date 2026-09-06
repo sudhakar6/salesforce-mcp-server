@@ -14,9 +14,9 @@ Salesforce — to query, search, and modify data in an org.
 
 ## Quickstart
 
-**You'll need:** a Salesforce org with an integration set up — a free
-[Developer Edition org](https://developer.salesforce.com/signup) works fine —
-and its client ID + secret in hand. [docs/SETUP.md](docs/SETUP.md) walks
+**You'll need:** a Salesforce org with an External Client App set up — a
+free [Developer Edition org](https://developer.salesforce.com/signup) works
+fine — and its Consumer Key in hand. [docs/SETUP.md](docs/SETUP.md) walks
 through creating that (10–15 min); do it first, then come back here.
 
 Then pick whichever of these you already have installed — both get you to
@@ -28,9 +28,15 @@ the same place, a running server:
 git clone <this-repo-url> && cd salesforce-mcp-server
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env   # fill in SF_LOGIN_URL / SF_CLIENT_ID / SF_CLIENT_SECRET
+cp .env.example .env   # fill in SF_LOGIN_URL / SF_CLIENT_ID
+python -m salesforce_mcp.login   # one-time interactive login — opens your browser
 python -m salesforce_mcp.server
 ```
+
+That last login step is only needed once — see
+[docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for what it does and why,
+and for the alternative Client Credentials Flow (`SF_CLIENT_SECRET`, no
+login step) if you'd rather use a fixed service identity instead.
 
 **Option B — Docker** (no Python setup needed; requires Docker installed
 *and running* — check with `docker info`):
@@ -42,9 +48,17 @@ docker run --rm -i \
   -e SF_LOGIN_URL=https://your-domain.my.salesforce.com \
   -e SF_CLIENT_ID=your-client-id \
   -e SF_CLIENT_SECRET=your-client-secret \
+  -e SF_AUTH_FLOW=client_credentials \
   -e MCP_TRANSPORT=stdio \
   salesforce-mcp-server
 ```
+
+Docker explicitly pins `SF_AUTH_FLOW=client_credentials` here rather than
+using the default interactive login — there's no browser or display inside
+a container for that flow to use. See
+[docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) if you actually want PKCE
+in a container anyway (mount a pre-existing `.salesforce_pkce_token.json`
+from the host).
 
 Either way, that's it running. **Next:** point the
 [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or Claude
@@ -87,6 +101,11 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   delete (`sf_delete_record`, `sf_bulk_load(operation="delete")`); disable
   with `SF_ELICITATION_ENABLED=false` — see
   [docs/USAGE.md](docs/USAGE.md#elicitation)
+- **Two auth options** — the default OAuth Client Credentials Flow (one
+  fixed service identity), or an interactive "Login with Salesforce"
+  (OAuth Authorization Code + PKCE) via `python -m salesforce_mcp.login`,
+  switched with `SF_AUTH_FLOW=pkce` — see
+  [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md)
 - **Resilient by default** — retries transient (5xx / `REQUEST_LIMIT_EXCEEDED`)
   Salesforce errors automatically; every other error comes back as a clean,
   readable message instead of a stack trace
@@ -126,10 +145,11 @@ Read in this order if you're getting started:
 |---|---|---|
 | 1 | [docs/MCP_PRIMER.md](docs/MCP_PRIMER.md) | New to MCP — what a server/client/tool call actually is |
 | 2 | [docs/SETUP.md](docs/SETUP.md) | Creating the Salesforce org + integration, `.env` config |
-| 3 | [docs/USAGE.md](docs/USAGE.md) | Running it — Claude Desktop, Claude Code, MCP Inspector, example prompts |
-| 4 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Hosting it in the cloud instead of locally |
-| 5 | [docs/EXTENDING.md](docs/EXTENDING.md) | Adding your own tool for a custom API |
-| 6 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Optional — how and why it was built this way |
+| 3 | [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) | Both auth flows side by side — Client Credentials vs. "Login with Salesforce" (PKCE) |
+| 4 | [docs/USAGE.md](docs/USAGE.md) | Running it — Claude Desktop, Claude Code, MCP Inspector, example prompts |
+| 5 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Hosting it in the cloud instead of locally |
+| 6 | [docs/EXTENDING.md](docs/EXTENDING.md) | Adding your own tool for a custom API |
+| 7 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Optional — how and why it was built this way |
 
 ## License
 

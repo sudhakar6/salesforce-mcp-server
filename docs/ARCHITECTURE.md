@@ -349,9 +349,115 @@ matches why the feature exists: a fresh install gets the safety net without
 having to know to turn it on; a user who finds it more annoying than useful
 turns it off explicitly.
 
+## Two auth flows, kept deliberately separate
+
+*For the practical "how do I configure/use each one" reference, see
+[AUTHENTICATION.md](AUTHENTICATION.md) — this section covers the internal
+design and why it's shaped this way.*
+
+Client Credentials Flow was the original auth flow (server-to-server, one
+fixed Salesforce identity shared by every caller — right for a
+remotely-hosted instance where everyone sharing the same integration user's
+permissions is acceptable, or headless environments with no browser, like
+Docker). You then asked for a "Login with Salesforce" button — the real
+mechanism for that, verified against Salesforce's own docs, is OAuth
+**Authorization Code flow with PKCE** (their recommended replacement for
+the deprecated User-Agent flow), where each person logs in and acts as
+*themselves*. **PKCE is now the default** — it's the better fit for "you
+personally run this locally," which is this project's primary use case;
+Client Credentials Flow remains fully supported as an explicit opt-in
+(`SF_AUTH_FLOW=client_credentials`) for the shared/hosted/headless case.
+
+The two are architecturally unrelated (one is a server-to-server POST, the
+other needs a browser redirect and a local callback listener) — so rather
+than branching one auth code path on a flag, they're **structurally kept
+apart**, on your explicit ask, so a change to one can't risk the other:
+
+```
+src/salesforce_mcp/auth/
+  errors.py               # SalesforceAuthError — the one thing both share
+  client_credentials.py   # ClientCredentialsAuth — knows nothing about PKCE
+  pkce.py                 # PkceRefreshAuth — knows nothing about Client Credentials
+  __init__.py             # build_auth(settings) — the ONLY file that knows both exist
+```
+
+Both classes expose the same one method, `get_access_token(http) ->
+(access_token, instance_url)` — plain duck typing, no shared base class or
+`Protocol`, because a shared interface file would itself be a second place
+both flows depend on. `salesforce_client.py` calls `build_auth(settings)`
+once in `__init__` and stores the result; everything else in that file
+(retry/backoff, 401 re-auth, `request()`) stays completely auth-method-
+agnostic, since re-authenticating on a 401 just means calling
+`get_access_token()` again, whichever strategy that is.
+
+**Why a separate `login.py` command, not just the server triggering a
+browser on startup**: this server is frequently launched as a silent
+background subprocess (Claude Desktop spawns it with no visible terminal).
+Popping open a browser mid-startup in that context would be confusing at
+best and would simply fail at worst (no display to open one on). So the
+interactive part — generate a PKCE pair, open the browser, run a temporary
+`http.server.HTTPServer` on `localhost` to catch the redirect, exchange the
+code for tokens — lives in `login.py`'s `perform_interactive_login()`,
+callable either once manually ahead of time (`python -m
+salesforce_mcp.login`, the same shape as `gh auth login` or `aws sso
+login`) or from a live tool call (`sf_login`, below). Either way it writes
+`{"refresh_token", "instance_url"}` to a local JSON file; `auth/pkce.py`'s
+`PkceRefreshAuth` only ever does the cheap, silent part afterward — read
+that file, POST `grant_type=refresh_token`. Deliberately, `login.py` and
+`auth/pkce.py` still don't import from each other at all; they only agree
+on that JSON shape, which is the minimum coupling possible short of not
+sharing anything.
+
+**`sf_login` — the same login, callable from inside a running session.**
+Once it was established that the browser-and-redirect wait is a *one-time*
+cost (only when there's no valid cached login yet, never on every
+subsequent call — after that it's silent `grant_type=refresh_token`), the
+earlier objection to building this as a tool mostly evaporated, so
+`tools/sf_login.py` exists as a self-healing alternative to the CLI: call
+it, and if a cached login already works it says so and does nothing; if
+not (or `force=True`), it runs the exact same `perform_interactive_login()`
+the CLI uses. Two things had to be solved to make that safe inside a live
+async server, that the CLI never had to worry about running in its own
+short-lived process:
+
+- **Not blocking the event loop.** `http.server.HTTPServer.handle_request()`
+  and the original synchronous `httpx.post()` token exchange are both
+  blocking calls; called directly inside an async tool, either would freeze
+  *every other* concurrent request the server might be handling for up to
+  two minutes. The callback wait now runs via `asyncio.to_thread(...)`, and
+  the token exchange uses `httpx.AsyncClient`, so the event loop stays free
+  the whole time.
+- **Visibility during the wait.** A tool call that might sit "pending" for
+  two minutes with no feedback is a bad experience and risks looking hung.
+  `perform_interactive_login()` polls the callback every 5 seconds
+  (`asyncio.wait_for` + `asyncio.shield`, looping until done or the 120s
+  timeout) and calls an injectable `on_status()` at each milestone and
+  every poll tick — the CLI prints them, `sf_login` relays them via
+  `ctx.report_progress()` (confirmed available on `Context` by inspecting
+  the installed SDK directly before relying on it).
+
+`sf_login` is registered conditionally — only when `settings.auth_flow ==
+"pkce"` — since it's meaningless under Client Credentials Flow. Every other
+tool module in this codebase registers unconditionally; this is the first
+one gated on config, and `EXTENDING.md` notes the pattern for anyone adding
+another tool that only makes sense under certain settings.
+
+One correctness detail worth calling out: Salesforce can *rotate* the
+refresh token on every use (an org-level setting). `PkceRefreshAuth`
+checks the token response for a new `refresh_token` and, if present,
+rewrites the cache file with it — skipping that would mean the *next*
+refresh fails even though the current one just succeeded, since the old
+refresh token is no longer valid once rotated.
+
+**The honest security caveat**: the cached refresh token is a local
+plaintext JSON file (`chmod 600`, not committed — see `.gitignore`), not
+backed by an OS keychain or any secret manager. Fine for a personal, local
+learning project; not something to point at production without upgrading
+that storage.
+
 ## Server-side auth is separate from Salesforce auth
 
-The OAuth Client Credentials Flow in `salesforce_client.py` is this server
+Whichever OAuth flow is active (`auth/` — see above) is this server
 authenticating itself *to Salesforce*. Once the server is also reachable
 over the network (Streamable HTTP mode), it needs its own gate — otherwise
 anyone who finds the URL can use it. `http_auth.py`'s bearer-token middleware

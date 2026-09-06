@@ -126,6 +126,18 @@ Four things to know about the pieces you're reusing:
    needs the extra argument). See
    [ARCHITECTURE.md#elicitation-confirming-before-broad-reads-or-destructive-writes](ARCHITECTURE.md#elicitation-confirming-before-broad-reads-or-destructive-writes)
    for the full reasoning on when this is worth adding versus overkill.
+8. **If your tool only makes sense under certain config** — `tools/sf_login.py`
+   is the example: it's meaningless unless `SF_AUTH_FLOW=pkce`, since
+   Client Credentials Flow has no concept of "log in." Every other tool
+   module registers unconditionally in the `for module in (...)` loop;
+   this one is called separately, behind an `if`:
+   ```python
+   if settings.auth_flow == "pkce":
+       sf_login.register(mcp, settings)
+   ```
+   The tool simply won't appear in `tools/list` at all when the condition
+   is false — nothing the model or a client needs to handle specially, it
+   just isn't offered.
 
 ## Worked example: a dedicated tool for the AccountHealth API from USAGE.md
 

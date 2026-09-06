@@ -14,11 +14,15 @@ DATA_BASE = f"{INSTANCE_URL}/services/data/{API_VERSION}"
 
 @pytest.fixture
 def settings() -> Settings:
+    """Pins auth_flow explicitly to client_credentials — this fixture backs
+    every test exercising real Client Credentials Flow behavior, so it must
+    not silently follow whatever Settings' own default happens to be."""
     return Settings(
         login_url=LOGIN_URL,
         client_id="test-client-id",
         client_secret="test-client-secret",
         api_version=API_VERSION,
+        auth_flow="client_credentials",
     )
 
 
@@ -34,15 +38,17 @@ async def authed_client(settings: Settings):
 
 
 class FakeContext:
-    """Stands in for mcp.server.mcpserver.Context — only implements
-    elicit(), since that's all these tools use it for. Records every message
-    it was asked to confirm, and returns a canned ElicitationResult matching
-    `action` (and, for "accept", `proceed`)."""
+    """Stands in for mcp.server.mcpserver.Context — implements only what
+    tests actually need: elicit() (elicitation tests) and report_progress()
+    (sf_login's progress-while-waiting). Records every elicit() message and
+    every report_progress() call; elicit() returns a canned ElicitationResult
+    matching `action` (and, for "accept", `proceed`)."""
 
     def __init__(self, action: str = "accept", proceed: bool = True):
         self.action = action
         self.proceed = proceed
         self.messages: list[str] = []
+        self.progress_calls: list[tuple[float, float | None, str | None]] = []
 
     async def elicit(self, message: str, schema):
         self.messages.append(message)
@@ -51,3 +57,6 @@ class FakeContext:
         if self.action == "decline":
             return DeclinedElicitation()
         return CancelledElicitation()
+
+    async def report_progress(self, progress: float, total: float | None = None, message: str | None = None):
+        self.progress_calls.append((progress, total, message))
