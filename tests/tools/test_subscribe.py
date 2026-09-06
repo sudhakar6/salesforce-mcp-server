@@ -10,13 +10,13 @@ from mcp.server.mcpserver.exceptions import ToolError
 from salesforce_mcp.pubsub_client import PubSubEvent
 from salesforce_mcp.tools.subscribe import register
 
-NOW = dt.datetime(2026, 9, 6, 12, 0, tzinfo=dt.UTC)
+NOW = dt.datetime.now(dt.UTC).replace(microsecond=0)
 
 
 def _event(minute: int, replay_id: bytes = b"r", message: str = "hi") -> PubSubEvent:
     return PubSubEvent(
         replay_id=replay_id,
-        created_date=NOW.replace(minute=minute),
+        created_date=NOW + dt.timedelta(minutes=minute),
         payload={"Message__c": message},
     )
 
@@ -102,7 +102,7 @@ async def test_start_time_given_uses_earliest_and_filters_older_events(make_tool
     events = [_event(minute=0, message="too-old"), _event(minute=10, message="in-window")]
     fake = _FakePubSubClient(events)
     tools = make_tools(fake)
-    start_time = NOW.replace(minute=5).isoformat()
+    start_time = (NOW + dt.timedelta(minutes=5)).isoformat()
 
     result = await tools["sf_subscribe_platform_event"](
         api_name="My_Event__e", start_time=start_time, timeout_seconds=0.1
@@ -131,7 +131,7 @@ async def test_stops_at_end_time_reached(make_tools):
     events = [_event(minute=0), _event(minute=30)]
     fake = _FakePubSubClient(events)
     tools = make_tools(fake)
-    end_time = NOW.replace(minute=15).isoformat()
+    end_time = (NOW + dt.timedelta(minutes=15)).isoformat()
 
     result = await tools["sf_subscribe_platform_event"](
         api_name="My_Event__e", end_time=end_time, timeout_seconds=1
