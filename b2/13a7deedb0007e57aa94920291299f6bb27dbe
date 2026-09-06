@@ -1,0 +1,35 @@
+README.md
+  s_16337f49bef67d::t_74e6e92d7baa7e 22,24-28,30-32,38-39,49-51,62
+  s_16337f49bef67d::t_b59a70674c15f5 84,88
+  s_16337f49bef67d::t_26c359173133f5 125-129
+  s_16337f49bef67d::t_6e17ed3469ae8b 29
+  s_16337f49bef67d::t_18c4f8a8d69dea 33-37
+  s_16337f49bef67d::t_62090b28ef95fb 40-48
+pyproject.toml
+  s_16337f49bef67d::t_159ac9f9f39b31 49-56
+  s_16337f49bef67d::t_f26f7fa4fa08ca 6,12-22
+docs/USAGE.md
+  s_16337f49bef67d::t_62ec66b9c1b2f9 78-105
+  s_16337f49bef67d::t_eea496cd6f73ae 13-19
+docs/AUTHENTICATION.md
+  s_16337f49bef67d::t_89096974e8a7b9 158-161
+  s_16337f49bef67d::t_3aaaa83ce21591 69-82
+docs/SETUP.md
+  s_16337f49bef67d::t_84e733b615516f 137-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "b213a7deedb0007e57aa94920291299f6bb27dbe",
+  "prompts": {},
+  "sessions": {
+    "s_16337f49bef67d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44ed8085-aea3-4147-ad44-bd1c22737fd5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sudhakar6 <chsudhakars@hotmail.com>"
+    }
+  }
+}
