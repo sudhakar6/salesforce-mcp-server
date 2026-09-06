@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sf-mcp-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "An independent, open-source MCP server for Salesforce (REST, Bulk API 2.0, Composite) — not a Salesforce product."
 readme = "README.md"
 requires-python = ">=3.11"
