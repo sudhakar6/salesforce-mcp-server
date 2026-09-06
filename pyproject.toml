@@ -15,6 +15,9 @@ dependencies = [
     "python-dotenv>=1.0",
     "uvicorn>=0.30",
     "starlette>=0.37",
+    "grpcio>=1.66",
+    "protobuf>=5",
+    "fastavro>=1.9",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +26,12 @@ dev = [
     "pytest-asyncio>=0.24",
     "respx>=0.21",
     "ruff>=0.6",
+]
+# Only needed to regenerate src/salesforce_mcp/pubsub/pubsub_api_pb2*.py from
+# the vendored .proto (see scripts/generate_pubsub_stubs.sh) — not required
+# to run or test the server; the generated stubs are committed.
+codegen = [
+    "grpcio-tools>=1.66",
 ]
 
 [project.scripts]
@@ -38,6 +47,8 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 110
 target-version = "py311"
+# Machine-generated from pubsub_api.proto (see scripts/generate_pubsub_stubs.sh) — not hand-edited, not linted.
+extend-exclude = ["src/salesforce_mcp/pubsub/pubsub_api_pb2*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

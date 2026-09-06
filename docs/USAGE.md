@@ -270,6 +270,107 @@ access to `sf_query`) can include browsing a chunk of Accounts and asking
 you to pick one. That's not a bug in the prompt; it's a completely different
 code path that happens to share a name with it.
 
+## Subscribing to platform events
+
+### What it is
+
+`sf_subscribe_platform_event` reads events from a Salesforce **platform
+event** or **Change Data Capture (CDC)** channel — the things normally
+consumed by an Apex trigger, a Flow, or an external subscriber over
+Salesforce's Pub/Sub API (the gRPC API that replaced the older CometD-based
+Streaming API). Rather than an open-ended live feed, it's a **bounded
+batch fetch**: one call connects, collects whatever matches, disconnects,
+and returns exactly what it collected — confirmed working end-to-end
+against a real Developer Edition org, including both the live-watch and
+historical-replay paths described below.
+
+### When to use it
+
+Reach for this when you want to know *what happened* on an event
+channel — "show me what was published on `mcp_server_test__e` in the last
+hour," "did an `AccountChangeEvent` fire for this record recently" — as
+opposed to reacting to events as they happen (that's a job for a real
+subscriber: an Apex trigger, a Flow, or a long-running external client;
+this tool's each call is bounded and finite by design, see
+[ARCHITECTURE.md](ARCHITECTURE.md) for why that's a deliberate choice, not
+a limitation to work around).
+
+### How to use it
+
+```
+sf_subscribe_platform_event(
+    api_name,               # e.g. "mcp_server_test__e", or a full topic
+                            # like "/data/AccountChangeEvent" for CDC
+    start_time=None,        # ISO 8601 with timezone offset, e.g.
+                            # "2026-09-06T02:30:00+00:00"
+    end_time=None,          # same format; must be after start_time
+    max_events=100,
+    timeout_seconds=20,     # capped at 120
+)
+```
+
+- `api_name` — a bare platform-event API name gets `/event/` prefixed
+  automatically (`mcp_server_test__e` → `/event/mcp_server_test__e`). For a
+  CDC channel, pass the full topic yourself: `/data/AccountChangeEvent`.
+- **Omit `start_time`/`end_time` to watch live** — see "confirmed behavior"
+  below for exactly what this returns.
+- **Set `start_time` to replay history** — must be within the last 72 hours
+  (Salesforce's Pub/Sub API retention window) or the call fails immediately,
+  before touching the network, with a clear message naming the limit.
+- The call always stops on its own: at `end_time` (if given), at
+  `max_events`, or after `timeout_seconds` with nothing new arriving —
+  whichever comes first. Check the response's `stopped_reason` to see which.
+
+### Confirmed behavior (tested against a real org)
+
+- **No `start_time`/`end_time`** → the tool watches only for events
+  published *during the call itself* (Salesforce's `LATEST` replay
+  preset — "tip of the stream," not a query over history). Call it, then
+  publish within its `timeout_seconds` window to see something come back.
+  Publish before or after that window and it returns
+  `{"events_returned": 0, "stopped_reason": "timeout"}` — an empty result
+  is the *correct* answer here, not a failure; it simply means nothing new
+  arrived while the call was listening.
+- **With `start_time` set** → the tool replays from history instead
+  (`EARLIEST`), discarding anything published before `start_time` on this
+  end (see "How it works" below for why it's done this way). This is the
+  path to use for "what already happened" — set `start_time` to comfortably
+  before whenever the event was published and it comes back decoded, with
+  no need to time the call against a live publish.
+
+**Try it yourself:** create a custom platform event in Setup (Platform
+Events → New Platform Event, one Text field is enough), publish a test
+event via its own "Publish Platform Events" panel or a couple of lines of
+Apex in Developer Console (`EventBus.publish(new Your_Event__e(Your_Field__c
+= 'test'))`), then call the tool with `start_time` set to a few minutes
+before you published it.
+
+### How it works
+
+Salesforce's Pub/Sub API has no "give me events since timestamp X" — only
+`LATEST` (tip of stream), `EARLIEST` (oldest retained event), or `CUSTOM` (a
+prior event's own opaque replay ID). So `start_time`/`end_time` are
+approximated, not passed to Salesforce directly: `start_time` given →
+replay from `EARLIEST` and filter out, on this end, anything published
+before it (checking each event's own `CreatedDate`, or
+`ChangeEventHeader.commitTimestamp` for a CDC channel); `start_time`
+omitted → `LATEST`, live-watch only, nothing retroactive. `end_time` works
+the same way in reverse — Salesforce can't stop the stream for you, so the
+tool watches each event's timestamp and disconnects once it passes
+`end_time`. See
+[ARCHITECTURE.md](ARCHITECTURE.md#platform-events-a-tool-not-a-resource-subscription--and-why)
+for the full reasoning, including two real bugs found and fixed by testing
+this against a live org (a cross-event-loop gRPC channel bug, and a
+Salesforce-side quirk where half-closing the request stream silently stops
+event delivery entirely).
+
+**If it's not working as expected:** `scripts/diagnose_pubsub.py
+<api_name>` bypasses this tool's time-filtering entirely and prints
+Salesforce's raw response — `GetTopic`'s `can_subscribe`/`schema_id` (confirms
+access and topic existence) and a raw 15-second `EARLIEST` subscribe with
+every event or keepalive printed as it arrives. Useful for telling apart "no
+events matched my filter" from "nothing is being delivered at all."
+
 ## Example prompts → tool calls
 
 | You ask | Tool(s) likely called |

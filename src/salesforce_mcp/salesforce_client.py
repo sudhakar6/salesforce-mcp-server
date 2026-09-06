@@ -5,6 +5,7 @@ import asyncio
 import httpx
 
 from .config import Settings
+from .errors import raise_for_salesforce_error
 
 MAX_ATTEMPTS = 3
 BACKOFF_BASE_SECONDS = 0.5
@@ -30,6 +31,7 @@ class SalesforceClient:
         self._access_token: str | None = None
         self._instance_url: str | None = None
         self._last_limit_info: str | None = None
+        self._org_id: str | None = None
 
     async def aclose(self) -> None:
         await self._http.aclose()
@@ -97,6 +99,21 @@ class SalesforceClient:
                 continue
 
             return response
+
+    async def get_pubsub_auth(self) -> tuple[str, str, str]:
+        """Return (access_token, instance_url, org_id) for the Pub/Sub API's
+        (gRPC) per-call metadata — a different auth shape than the Bearer
+        header `request()` above uses for REST. `org_id` is fetched once via
+        SOQL and cached, same pattern as `_access_token`/`_instance_url`.
+        """
+        if self._access_token is None:
+            await self._authenticate()
+        if self._org_id is None:
+            response = await self.request("GET", "/query", params={"q": "SELECT Id FROM Organization"})
+            raise_for_salesforce_error(response)
+            records = response.json().get("records", [])
+            self._org_id = records[0]["Id"] if records else ""
+        return self._access_token, self._instance_url, self._org_id
 
     def _capture_limit_info(self, response: httpx.Response) -> None:
         limit_info = response.headers.get("Sforce-Limit-Info")

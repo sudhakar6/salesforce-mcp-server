@@ -9,6 +9,8 @@ load_dotenv()
 
 DEFAULT_API_VERSION = "v61.0"
 DEFAULT_PORT = 8080
+DEFAULT_PUBSUB_HOST = "api.pubsub.salesforce.com"
+DEFAULT_PUBSUB_PORT = 7443
 
 
 @dataclass(frozen=True)
@@ -21,6 +23,8 @@ class Settings:
     host: str = "0.0.0.0"
     port: int = DEFAULT_PORT
     server_token: str | None = None
+    pubsub_host: str = DEFAULT_PUBSUB_HOST
+    pubsub_port: int = DEFAULT_PUBSUB_PORT
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -40,6 +44,8 @@ class Settings:
             host=os.environ.get("MCP_HOST", "0.0.0.0"),
             port=int(os.environ.get("PORT", os.environ.get("MCP_PORT", str(DEFAULT_PORT)))),
             server_token=server_token,
+            pubsub_host=os.environ.get("SF_PUBSUB_HOST", DEFAULT_PUBSUB_HOST),
+            pubsub_port=int(os.environ.get("SF_PUBSUB_PORT", str(DEFAULT_PUBSUB_PORT))),
         )
 
 

@@ -205,6 +205,100 @@ literal string conversationally (with full access to `sf_query` and no
 share a name, not a broken prompt. See
 [USAGE.md#prompts](USAGE.md#prompts) for the confirmed how-to.
 
+## Platform events: a Tool, not a Resource subscription — and why
+
+The brainstorm that produced `sf_org_health` and Prompts also included
+"Resource subscriptions" — MCP's `resources/subscribe` +
+`notifications/resources/updated` mechanism, where a client asks to be
+pinged whenever a resource changes and re-reads it. The concrete ask that
+followed ("give a platform event name, subscribe, bound it with a start
+time and end time") turned out not to fit that mechanism at all, for a
+reason worth stating plainly: a resource-update notification carries no
+payload — it only tells the client "this changed, go call `resources/read`
+again." There's no way to push individual event payloads to a client that
+way, and no natural "end time" for a subscription that just runs until
+unsubscribed. So `subscribe.py` implements `sf_subscribe_platform_event` as
+an ordinary **Tool** instead: one bounded call — connect, collect matching
+events, disconnect, return them — which is exactly what a start/end-time
+request shape wants.
+
+That decision was made *before* touching Salesforce's Pub/Sub API (the gRPC
+API that replaced the old CometD-based Streaming API), and the API itself
+then forced a second approximation. Verified directly against
+[Salesforce's own proto file](https://github.com/forcedotcom/pub-sub-api)
+and a community gRPC client
+([pozil/pub-sub-api-node-client](https://github.com/pozil/pub-sub-api-node-client)),
+both independently: the `Subscribe` RPC only accepts `LATEST` (tip of the
+stream), `EARLIEST` (oldest retained event), or `CUSTOM` (a prior event's
+own opaque `replay_id` bytes) — there is no "give me events since timestamp
+X" parameter anywhere in this API. So `start_time`/`end_time` in
+`tools/subscribe.py` are approximated, not passed to Salesforce directly:
+`start_time` given → subscribe from `EARLIEST` and discard, on this end,
+anything published before it (checking each event's own `CreatedDate`, or
+`ChangeEventHeader.commitTimestamp` for a CDC channel); `start_time` omitted
+→ `LATEST`, a live watch only. `end_time` has the same shape: Salesforce
+can't stop the stream for you, so the tool watches each event's timestamp
+and disconnects once it passes `end_time` (or `max_events`/`timeout_seconds`
+is hit first — the stream is always explicitly cancelled, never left open).
+
+The retention window matters here too: Salesforce keeps 72 hours of
+replayable history (confirmed via the
+[Event Message Durability guide](https://developer.salesforce.com/docs/platform/pub-sub-api/guide/event-message-durability.html)
+and the `replayid.corrupted` error the RPC reference documents for an
+expired replay ID) — a `start_time` older than that is rejected before any
+network call, rather than failing confusingly mid-stream.
+
+`pubsub_client.py` is a second, separate transport client alongside
+`salesforce_client.py`'s REST wrapper — a deliberate split, since gRPC
+(binary framing over HTTP/2, streaming calls, per-call metadata for auth)
+and Avro payload decoding have nothing in common with `httpx`'s request/
+response REST calls. It reuses `SalesforceClient`'s existing OAuth token via
+a new `get_pubsub_auth()` method rather than authenticating twice — the
+Pub/Sub API's own metadata contract (documented directly in the generated
+`PubSubStub`'s docstring) is `accesstoken`/`instanceurl`/`tenantid`, not a
+bearer header. The generated protobuf/gRPC stubs
+(`pubsub/pubsub_api_pb2*.py`) are committed rather than generated at install
+time — `scripts/generate_pubsub_stubs.sh` regenerates them on the rare
+occasion the vendored `pubsub_api.proto` changes, but running or testing the
+server never needs `grpcio-tools`, only `grpcio` itself.
+
+**A real bug this surfaced, found by testing against a live org rather than
+assumed:** the first hands-on call to `sf_subscribe_platform_event` failed
+with a bare "Error executing tool" — no detail, because the exception
+wasn't a `SalesforceApiError`/`ValueError` and so `@as_tool_error` never saw
+it. Reproduced directly: `grpc.aio.secure_channel(...)` was being created
+inside `build_server()`, which runs *before* `main()`'s `asyncio.run()`
+starts the event loop that actually drives the server. A `grpc.aio.Channel`
+binds to whichever event loop is current at construction time — created
+that early, it attaches to a throwaway loop, and the first real RPC then
+fails with `RuntimeError: ... got Future ... attached to a different loop`.
+The fix, in `pubsub_client.py`'s `_ensure_stub()`: create the channel/stub
+lazily, on first actual `await` from inside the real running loop, instead
+of eagerly in `__init__`. `SalesforceClient`'s `httpx.AsyncClient` never hit
+this because HTTP transports bind lazily per-request; a gRPC channel does
+not.
+
+**A second real bug, also only found by testing against a live org:** after
+the above fix, calls succeeded but consistently returned zero events —
+even with `GetTopic` confirming `can_subscribe=True` and a valid `schema_id`,
+and with real events already published on the topic. Isolated with a
+standalone diagnostic script (`scripts/diagnose_pubsub.py`, bypassing all of
+`tools/subscribe.py`'s time-filtering logic) that made the same raw
+`Subscribe` call and got zero events *and* zero keepalives over 15 seconds —
+the request stream itself was pathological, not a permissions or retention
+issue. Root cause: `subscribe()`'s `request_iterator` sent one `FetchRequest`
+then returned, which half-closes the client's write side of the bidi
+stream. Salesforce appears to stop delivering events once it sees the
+client signal "done sending," even though `num_requested` still had
+capacity. The fix: after yielding the first `FetchRequest`, the iterator
+now `await`s an `asyncio.Event` that's never set, keeping the write side
+open indefinitely — the caller's `call.cancel()` (via `gen.aclose()`) is
+what actually ends things, not the generator returning on its own. Guarded
+by `tests/test_pubsub_client.py::test_request_stream_stays_open_after_the_first_message`,
+which asserts the request iterator does *not* raise `StopAsyncIteration`
+after its first item — confirmed to fail against the pre-fix code before
+being confirmed to pass against the fix.
+
 ## Server-side auth is separate from Salesforce auth
 
 The OAuth Client Credentials Flow in `salesforce_client.py` is this server

@@ -62,6 +62,16 @@ license, and a permission set granting only what the tools need:
 - Assign the permission set to that user, then set it as the External Client
   App's "Run As" user (step 2.4 above)
 
+**If you plan to use `sf_subscribe_platform_event`:** the Pub/Sub API
+(platform events / CDC) needs its own access on top of the above — Salesforce
+gates it separately from plain REST API access. We haven't pinned down the
+exact permission name/location as it appears in every org edition/release
+(the same lesson as the External Client App UI note below — don't trust a
+fixed screenshot over what's actually in front of you); if `sf_subscribe_platform_event`
+fails with a permission error, check the integration user's profile/permission
+set for something like "Manage Platform Events" or CDC-specific access under
+**Setup → Change Data Capture**, and adjust as needed for your org.
+
 ## 4. Find your My Domain login URL
 
 **Setup → My Domain** shows something like

@@ -79,6 +79,10 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **Prompts** — ready-made task templates for common requests:
   `summarize_account`, `draft_followup_email`, `data_hygiene_check` — see
   [docs/USAGE.md](docs/USAGE.md#prompts)
+- **Platform events / Change Data Capture** — `sf_subscribe_platform_event`
+  replays a bounded batch of events from a platform event or CDC channel,
+  honoring Salesforce's 72-hour Pub/Sub API retention window — see
+  [docs/USAGE.md](docs/USAGE.md#subscribing-to-platform-events)
 - **Resilient by default** — retries transient (5xx / `REQUEST_LIMIT_EXCEEDED`)
   Salesforce errors automatically; every other error comes back as a clean,
   readable message instead of a stack trace
