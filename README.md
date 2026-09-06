@@ -171,7 +171,8 @@ Read in this order if you're getting started:
 | 4 | [docs/USAGE.md](docs/USAGE.md) | Running it — Claude Desktop, Claude Code, MCP Inspector, example prompts |
 | 5 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Hosting it in the cloud instead of locally |
 | 6 | [docs/EXTENDING.md](docs/EXTENDING.md) | Adding your own tool for a custom API |
-| 7 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Optional — how and why it was built this way |
+| 7 | [docs/RELEASING.md](docs/RELEASING.md) | Maintainers only — how a PyPI release actually gets published |
+| 8 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Optional — how and why it was built this way |
 
 ## License
 
