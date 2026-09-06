@@ -22,9 +22,11 @@ SERVER_INSTRUCTIONS = (
     "plus a pass-through for custom Apex REST endpoints the org exposes, and "
     "ready-made prompts for common tasks (summarizing an Account, drafting a "
     "follow-up email, checking data hygiene), and a bounded platform-event/CDC "
-    "replay tool. This is an independent, open-source implementation of the "
-    "Model Context Protocol spec against Salesforce's public APIs — it is not "
-    "a Salesforce product and is not affiliated with or endorsed by Salesforce."
+    "replay tool. Broad queries/searches and deletes ask for confirmation via "
+    "MCP Elicitation first (disable with SF_ELICITATION_ENABLED=false). This "
+    "is an independent, open-source implementation of the Model Context "
+    "Protocol spec against Salesforce's public APIs — it is not a Salesforce "
+    "product and is not affiliated with or endorsed by Salesforce."
 )
 
 
@@ -39,8 +41,11 @@ def build_server(settings: Settings) -> tuple[MCPServer, SalesforceClient, PubSu
     def get_pubsub_client() -> PubSubClient:
         return pubsub_client
 
-    for module in (query, records, describe, bulk, composite, ops, custom_api, org_health):
+    for module in (describe, composite, ops, custom_api, org_health):
         module.register(mcp, get_client)
+    query.register(mcp, get_client, elicitation_enabled=settings.elicitation_enabled)
+    records.register(mcp, get_client, elicitation_enabled=settings.elicitation_enabled)
+    bulk.register(mcp, get_client, elicitation_enabled=settings.elicitation_enabled)
     subscribe.register(mcp, get_client, get_pubsub_client)
     resources_module.register(mcp, get_client)
     prompts_module.register(mcp, get_client)

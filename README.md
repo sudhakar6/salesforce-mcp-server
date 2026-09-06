@@ -83,6 +83,10 @@ instead of running it locally, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   replays a bounded batch of events from a platform event or CDC channel,
   honoring Salesforce's 72-hour Pub/Sub API retention window — see
   [docs/USAGE.md](docs/USAGE.md#subscribing-to-platform-events)
+- **Elicitation** — confirms before an unscoped `sf_query`/`sf_search` or any
+  delete (`sf_delete_record`, `sf_bulk_load(operation="delete")`); disable
+  with `SF_ELICITATION_ENABLED=false` — see
+  [docs/USAGE.md](docs/USAGE.md#elicitation)
 - **Resilient by default** — retries transient (5xx / `REQUEST_LIMIT_EXCEEDED`)
   Salesforce errors automatically; every other error comes back as a clean,
   readable message instead of a stack trace

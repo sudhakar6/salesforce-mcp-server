@@ -95,6 +95,10 @@ SF_CLIENT_SECRET=<Consumer Secret>
 Leave `SF_API_VERSION` and everything under "Transport" alone for local/stdio
 use — see [DEPLOYMENT.md](DEPLOYMENT.md) for the HTTP-mode variables.
 
+One more optional variable, defaulting to on: `SF_ELICITATION_ENABLED=false`
+turns off the confirm-before-running checks on unscoped queries/searches and
+deletes — see [USAGE.md#elicitation](USAGE.md#elicitation).
+
 ## 6. Verify the connection
 
 ```bash

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from mcp.server.mcpserver import AcceptedElicitation, CancelledElicitation, DeclinedElicitation
 
 from salesforce_mcp.config import Settings
 from salesforce_mcp.salesforce_client import SalesforceClient
@@ -30,3 +31,23 @@ async def authed_client(settings: Settings):
     client._instance_url = INSTANCE_URL  # noqa: SLF001 - test seam
     yield client
     await client.aclose()
+
+
+class FakeContext:
+    """Stands in for mcp.server.mcpserver.Context — only implements
+    elicit(), since that's all these tools use it for. Records every message
+    it was asked to confirm, and returns a canned ElicitationResult matching
+    `action` (and, for "accept", `proceed`)."""
+
+    def __init__(self, action: str = "accept", proceed: bool = True):
+        self.action = action
+        self.proceed = proceed
+        self.messages: list[str] = []
+
+    async def elicit(self, message: str, schema):
+        self.messages.append(message)
+        if self.action == "accept":
+            return AcceptedElicitation(data=schema(proceed=self.proceed))
+        if self.action == "decline":
+            return DeclinedElicitation()
+        return CancelledElicitation()

@@ -5,8 +5,9 @@ import csv
 import io
 from collections.abc import Callable
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 
+from ..elicitation import confirm
 from ..errors import SalesforceApiError, as_tool_error, raise_for_salesforce_error
 from ..salesforce_client import SalesforceClient
 
@@ -45,7 +46,9 @@ async def _poll_job(client: SalesforceClient, path: str) -> dict:
     raise SalesforceApiError(408, f"Bulk job at {path} did not complete within the polling window")
 
 
-def register(mcp: MCPServer, get_client: Callable[[], SalesforceClient]) -> dict[str, Callable]:
+def register(
+    mcp: MCPServer, get_client: Callable[[], SalesforceClient], elicitation_enabled: bool
+) -> dict[str, Callable]:
     @mcp.tool()
     @as_tool_error
     async def sf_bulk_query(soql: str) -> dict:
@@ -90,6 +93,7 @@ def register(mcp: MCPServer, get_client: Callable[[], SalesforceClient]) -> dict
         operation: str,
         records: list[dict],
         external_id_field: str | None = None,
+        ctx: Context | None = None,
     ) -> dict:
         """Insert/update/upsert/delete a batch of records via Bulk API 2.0.
 
@@ -97,6 +101,10 @@ def register(mcp: MCPServer, get_client: Callable[[], SalesforceClient]) -> dict
         one-record-per-call REST endpoints. `operation` is one of "insert",
         "update", "upsert", "delete". `external_id_field` is required for
         "upsert". For "delete", each record dict needs only an "Id" key.
+
+        A "delete" operation always asks for confirmation first via MCP
+        Elicitation — it's irreversible — disable with
+        SF_ELICITATION_ENABLED=false. insert/update/upsert are unaffected.
         """
         if operation not in SUPPORTED_LOAD_OPERATIONS:
             allowed = sorted(SUPPORTED_LOAD_OPERATIONS)
@@ -105,6 +113,15 @@ def register(mcp: MCPServer, get_client: Callable[[], SalesforceClient]) -> dict
             raise ValueError("external_id_field is required for the upsert operation")
         if not records:
             raise ValueError("records must not be empty")
+
+        if operation == "delete":
+            proceed = await confirm(
+                ctx,
+                f"Bulk-delete {len(records)} {sobject} record(s)? This cannot be undone.",
+                enabled=elicitation_enabled,
+            )
+            if not proceed:
+                return {"executed": False, "reason": "Declined confirmation for a bulk delete."}
 
         client = get_client()
         job_body: dict = {"object": sobject, "operation": operation, "lineEnding": "LF"}

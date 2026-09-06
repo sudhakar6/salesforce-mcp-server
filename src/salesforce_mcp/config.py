@@ -25,6 +25,7 @@ class Settings:
     server_token: str | None = None
     pubsub_host: str = DEFAULT_PUBSUB_HOST
     pubsub_port: int = DEFAULT_PUBSUB_PORT
+    elicitation_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -46,7 +47,14 @@ class Settings:
             server_token=server_token,
             pubsub_host=os.environ.get("SF_PUBSUB_HOST", DEFAULT_PUBSUB_HOST),
             pubsub_port=int(os.environ.get("SF_PUBSUB_PORT", str(DEFAULT_PUBSUB_PORT))),
+            elicitation_enabled=_parse_bool(os.environ.get("SF_ELICITATION_ENABLED"), default=True),
         )
+
+
+def _parse_bool(value: str | None, *, default: bool) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
 
 
 def _require_env(name: str) -> str:

@@ -9,12 +9,17 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from salesforce_mcp.tools.bulk import register
-from tests.conftest import DATA_BASE
+from tests.conftest import DATA_BASE, FakeContext
 
 
 @pytest.fixture
 def tools(authed_client):
-    return register(MCPServer("test"), lambda: authed_client)
+    return register(MCPServer("test"), lambda: authed_client, elicitation_enabled=False)
+
+
+@pytest.fixture
+def elicited_tools(authed_client):
+    return register(MCPServer("test"), lambda: authed_client, elicitation_enabled=True)
 
 
 @pytest.fixture(autouse=True)
@@ -112,3 +117,64 @@ async def test_sf_bulk_load_rejects_unsupported_operation(tools):
 async def test_sf_bulk_load_rejects_empty_records(tools):
     with pytest.raises(ToolError, match="must not be empty"):
         await tools["sf_bulk_load"](sobject="Account", operation="insert", records=[])
+
+
+async def test_sf_bulk_load_insert_never_elicits(elicited_tools):
+    ctx = FakeContext(action="decline")
+    job_id = "750zz0000000001"
+    async with respx.mock(assert_all_called=True) as router:
+        router.post(f"{DATA_BASE}/jobs/ingest").mock(return_value=httpx.Response(200, json={"id": job_id}))
+        router.put(f"{DATA_BASE}/jobs/ingest/{job_id}/batches").mock(return_value=httpx.Response(201))
+        router.patch(f"{DATA_BASE}/jobs/ingest/{job_id}").mock(
+            return_value=httpx.Response(200, json={"id": job_id, "state": "UploadComplete"})
+        )
+        router.get(f"{DATA_BASE}/jobs/ingest/{job_id}").mock(
+            return_value=httpx.Response(
+                200, json={"id": job_id, "state": "JobComplete", "numberRecordsProcessed": 1}
+            )
+        )
+        router.get(f"{DATA_BASE}/jobs/ingest/{job_id}/failedResults").mock(
+            return_value=httpx.Response(200, text="sf__Id,sf__Error\n")
+        )
+
+        await elicited_tools["sf_bulk_load"](
+            sobject="Account", operation="insert", records=[{"Name": "Acme"}], ctx=ctx
+        )
+
+    assert ctx.messages == []
+
+
+async def test_sf_bulk_load_delete_always_confirms_when_elicitation_enabled(elicited_tools):
+    ctx = FakeContext(action="accept", proceed=True)
+    job_id = "750zz0000000002"
+    async with respx.mock(assert_all_called=True) as router:
+        router.post(f"{DATA_BASE}/jobs/ingest").mock(return_value=httpx.Response(200, json={"id": job_id}))
+        router.put(f"{DATA_BASE}/jobs/ingest/{job_id}/batches").mock(return_value=httpx.Response(201))
+        router.patch(f"{DATA_BASE}/jobs/ingest/{job_id}").mock(
+            return_value=httpx.Response(200, json={"id": job_id, "state": "UploadComplete"})
+        )
+        router.get(f"{DATA_BASE}/jobs/ingest/{job_id}").mock(
+            return_value=httpx.Response(
+                200, json={"id": job_id, "state": "JobComplete", "numberRecordsProcessed": 1}
+            )
+        )
+        router.get(f"{DATA_BASE}/jobs/ingest/{job_id}/failedResults").mock(
+            return_value=httpx.Response(200, text="sf__Id,sf__Error\n")
+        )
+
+        result = await elicited_tools["sf_bulk_load"](
+            sobject="Account", operation="delete", records=[{"Id": "001A"}], ctx=ctx
+        )
+
+    assert len(ctx.messages) == 1
+    assert result["records_processed"] == 1
+
+
+async def test_sf_bulk_load_delete_declined_makes_no_salesforce_call(elicited_tools):
+    ctx = FakeContext(action="decline")
+    async with respx.mock(assert_all_called=True):
+        result = await elicited_tools["sf_bulk_load"](
+            sobject="Account", operation="delete", records=[{"Id": "001A"}], ctx=ctx
+        )
+
+    assert result == {"executed": False, "reason": "Declined confirmation for a bulk delete."}

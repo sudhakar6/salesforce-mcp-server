@@ -7,12 +7,17 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from salesforce_mcp.tools.records import register
-from tests.conftest import DATA_BASE
+from tests.conftest import DATA_BASE, FakeContext
 
 
 @pytest.fixture
 def tools(authed_client):
-    return register(MCPServer("test"), lambda: authed_client)
+    return register(MCPServer("test"), lambda: authed_client, elicitation_enabled=False)
+
+
+@pytest.fixture
+def elicited_tools(authed_client):
+    return register(MCPServer("test"), lambda: authed_client, elicitation_enabled=True)
 
 
 async def test_sf_get_record_with_field_restriction(tools):
@@ -91,3 +96,21 @@ async def test_sf_delete_record_not_found_raises_tool_error(tools):
         )
         with pytest.raises(ToolError, match="NOT_FOUND"):
             await tools["sf_delete_record"](sobject="Account", record_id="nope")
+
+
+async def test_sf_delete_record_always_confirms_when_elicitation_enabled(elicited_tools):
+    ctx = FakeContext(action="accept", proceed=True)
+    async with respx.mock(assert_all_called=True) as router:
+        router.delete(f"{DATA_BASE}/sobjects/Account/001A").mock(return_value=httpx.Response(204))
+        result = await elicited_tools["sf_delete_record"](sobject="Account", record_id="001A", ctx=ctx)
+
+    assert len(ctx.messages) == 1
+    assert result == {"id": "001A", "success": True}
+
+
+async def test_sf_delete_record_declined_makes_no_salesforce_call(elicited_tools):
+    ctx = FakeContext(action="decline")
+    async with respx.mock(assert_all_called=True):
+        result = await elicited_tools["sf_delete_record"](sobject="Account", record_id="001A", ctx=ctx)
+
+    assert result == {"executed": False, "reason": "Declined confirmation for a delete."}

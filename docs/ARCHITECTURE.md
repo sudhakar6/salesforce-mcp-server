@@ -299,6 +299,56 @@ which asserts the request iterator does *not* raise `StopAsyncIteration`
 after its first item — confirmed to fail against the pre-fix code before
 being confirmed to pass against the fix.
 
+## Elicitation: confirming before broad reads or destructive writes
+
+Motivated by a real incident during this project's own testing: given full
+access to `sf_query`, the model chose to browse 50 Accounts with no
+scoping when it wasn't sure which record the user meant. MCP's
+**Elicitation** primitive — a tool pausing mid-execution to ask the user a
+question through the client's own UI — is the mechanism built for exactly
+this: a human checkpoint in front of a specific failure mode, not a general
+"are you sure" wrapper around everything.
+
+Verified directly against the installed SDK before writing any code here
+(same discipline as every feature before it): a tool requests the
+request-scoped context by adding a `ctx: Context`-annotated parameter — the
+framework auto-injects a real one whenever a live request comes through, so
+the `| None = None` default on that parameter exists purely so this
+codebase's existing direct-call unit tests don't all need to construct one.
+`ctx.elicit(message, schema)` returns `AcceptedElicitation[data] |
+DeclinedElicitation | CancelledElicitation` (`mcp/server/elicitation.py`) —
+check `.action`, and only the accepted variant has `.data`. Confirmed there's
+no client-capability pre-check on the SDK side; it just sends
+`elicitation/create` and awaits a reply — and confirmed, end to end against
+a real client, that this actually surfaces as a prompt to a person: see
+[USAGE.md#elicitation](USAGE.md#elicitation).
+
+**Where it's wired in, and why those specific spots** (`elicitation.py`
+holds the shared heuristics and the `confirm()` helper every one of these
+calls):
+
+- `sf_query` / `sf_search` — the actual incident. Triggered by a cheap,
+  deterministic heuristic (`soql_looks_unscoped`/`sosl_looks_unscoped`): no
+  `WHERE`/`RETURNING` clause, or no `LIMIT`. This is regex-based pattern
+  matching, not a SOQL/SOSL parser — good enough to catch the common
+  "browsing everything" case without hand-rolling grammar for either
+  language, and documented as a heuristic rather than overclaiming
+  precision.
+- `sf_delete_record` — confirms **unconditionally**. A single-record delete
+  has no "scope" to be broad or narrow about; the risk is the delete itself,
+  not how many rows it touches.
+- `sf_bulk_load` — confirms **unconditionally, only when `operation ==
+  "delete"`**. insert/update/upsert are left alone; a bulk delete is
+  irreversible regardless of how many records are in the batch, so (unlike
+  the SOQL/SOSL case) no heuristic gates it.
+
+**The disable switch**: `SF_ELICITATION_ENABLED=false` (config.py,
+`Settings.elicitation_enabled`, defaults to **on**) skips every check above
+without ever touching `ctx` — `confirm()`'s first line. Defaulting to on
+matches why the feature exists: a fresh install gets the safety net without
+having to know to turn it on; a user who finds it more annoying than useful
+turns it off explicitly.
+
 ## Server-side auth is separate from Salesforce auth
 
 The OAuth Client Credentials Flow in `salesforce_client.py` is this server

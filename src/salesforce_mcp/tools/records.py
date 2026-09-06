@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 
+from ..elicitation import confirm
 from ..errors import as_tool_error, raise_for_salesforce_error
 from ..salesforce_client import SalesforceClient
 
 
-def register(mcp: MCPServer, get_client: Callable[[], SalesforceClient]) -> dict[str, Callable]:
+def register(
+    mcp: MCPServer, get_client: Callable[[], SalesforceClient], elicitation_enabled: bool
+) -> dict[str, Callable]:
     @mcp.tool()
     @as_tool_error
     async def sf_get_record(sobject: str, record_id: str, fields: list[str] | None = None) -> dict:
@@ -63,8 +66,20 @@ def register(mcp: MCPServer, get_client: Callable[[], SalesforceClient]) -> dict
 
     @mcp.tool()
     @as_tool_error
-    async def sf_delete_record(sobject: str, record_id: str) -> dict:
-        """Delete a record by ID."""
+    async def sf_delete_record(sobject: str, record_id: str, ctx: Context | None = None) -> dict:
+        """Delete a record by ID.
+
+        Always asks for confirmation first via MCP Elicitation — deletes are
+        irreversible — disable with SF_ELICITATION_ENABLED=false.
+        """
+        proceed = await confirm(
+            ctx,
+            f"Delete {sobject} record {record_id}? This cannot be undone.",
+            enabled=elicitation_enabled,
+        )
+        if not proceed:
+            return {"executed": False, "reason": "Declined confirmation for a delete."}
+
         client = get_client()
         response = await client.request("DELETE", f"/sobjects/{sobject}/{record_id}")
         raise_for_salesforce_error(response)

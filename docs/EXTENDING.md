@@ -102,6 +102,30 @@ Four things to know about the pieces you're reusing:
    Tool — only `MCPError` does. `as_prompt_error` handles this; see
    [ARCHITECTURE.md#prompts-the-third-mcp-primitive-and-a-real-surprise-in-how-errors-work](ARCHITECTURE.md#prompts-the-third-mcp-primitive-and-a-real-surprise-in-how-errors-work)
    for why.
+7. **If your tool should confirm before running** — a read that could return
+   an unbounded number of rows, or any destructive/irreversible write — add
+   a `ctx: Context | None = None` parameter to the tool function, and call
+   the shared helper from `elicitation.py`:
+   ```python
+   from mcp.server.mcpserver import Context
+   from ..elicitation import confirm
+
+   async def sf_your_tool_name(param: str, ctx: Context | None = None) -> dict:
+       proceed = await confirm(ctx, "Confirm you want to do X?", enabled=elicitation_enabled)
+       if not proceed:
+           return {"executed": False, "reason": "Declined confirmation."}
+       ...
+   ```
+   Write your own condition for *when* to ask — a `*_looks_unscoped`-style
+   heuristic like `sf_query`'s, or unconditionally like `sf_delete_record`'s
+   — whichever fits the risk you're guarding against. Then thread
+   `elicitation_enabled: bool` through your module's `register()` the same
+   way `query.py`/`records.py`/`bulk.py` do, and pass
+   `elicitation_enabled=settings.elicitation_enabled` when you wire it up in
+   `server.py` (outside the generic `for module in (...)` loop, since it
+   needs the extra argument). See
+   [ARCHITECTURE.md#elicitation-confirming-before-broad-reads-or-destructive-writes](ARCHITECTURE.md#elicitation-confirming-before-broad-reads-or-destructive-writes)
+   for the full reasoning on when this is worth adding versus overkill.
 
 ## Worked example: a dedicated tool for the AccountHealth API from USAGE.md
 

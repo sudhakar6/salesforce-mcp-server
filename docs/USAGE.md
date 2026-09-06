@@ -371,6 +371,41 @@ access and topic existence) and a raw 15-second `EARLIEST` subscribe with
 every event or keepalive printed as it arrives. Useful for telling apart "no
 events matched my filter" from "nothing is being delivered at all."
 
+## Elicitation
+
+*MCP's third server→client mechanism alongside Prompts and Resources: a
+tool pausing mid-execution to ask the user a yes/no question through the
+client's own UI, rather than just running with whatever it was given.*
+
+**What it's for:** a real incident during this project's own testing —
+given full access to `sf_query`, the model chose to browse 50 Accounts with
+no scoping when it wasn't sure which record the user meant. Four spots now
+ask for confirmation first instead of just running:
+
+| Tool | Confirms when |
+|---|---|
+| `sf_query` | The SOQL has no `WHERE` clause and/or no `LIMIT` |
+| `sf_search` | The SOSL has no `RETURNING` clause and/or no `LIMIT` |
+| `sf_delete_record` | Always — every delete |
+| `sf_bulk_load` | Always, but only when `operation="delete"` — insert/update/upsert are unaffected |
+
+Decline (or cancel) and the tool returns
+`{"executed": false, "reason": "..."}` instead of calling Salesforce at
+all — nothing runs.
+
+**Turning it off:** set `SF_ELICITATION_ENABLED=false` (in `.env`, or the
+container's environment) to skip every check above unconditionally. It
+defaults to **on**.
+
+**Client support — confirmed working.** Verified directly against the
+installed SDK that the server-side mechanism is correct (it sends a real
+`elicitation/create` request and waits for a reply — see
+[ARCHITECTURE.md#elicitation-confirming-before-broad-reads-or-destructive-writes](ARCHITECTURE.md#elicitation-confirming-before-broad-reads-or-destructive-writes)),
+and then confirmed end to end against a real client: calling `sf_query`
+with an unscoped SOQL string surfaced an actual confirmation prompt, and
+declining it returned `{"executed": false, ...}` with no Salesforce call
+made.
+
 ## Example prompts → tool calls
 
 | You ask | Tool(s) likely called |
